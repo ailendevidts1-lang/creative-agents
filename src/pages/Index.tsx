@@ -4,6 +4,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { ActivityItem } from "@/components/ActivityItem";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -160,8 +161,8 @@ const Index = () => {
                     <Filter className="w-4 h-4 mr-2" />
                     Filter
                   </Button>
-                  <Button variant="outline" size="sm" className="btn-glass">
-                    View All
+                  <Button variant="outline" size="sm" className="btn-glass" asChild>
+                    <Link to="/marketplace">View All</Link>
                   </Button>
                 </div>
               </div>
@@ -180,9 +181,11 @@ const Index = () => {
                   <h2 className="text-2xl font-bold text-foreground mb-1">My Agents</h2>
                   <p className="text-muted-foreground">Your deployed agents and their performance</p>
                 </div>
-                <Button className="btn-warm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Agent
+                <Button className="btn-warm" asChild>
+                  <Link to="/builder">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Agent
+                  </Link>
                 </Button>
               </div>
               

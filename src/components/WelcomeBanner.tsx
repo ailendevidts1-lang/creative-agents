@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Search, Bot } from "lucide-react";
 import heroImage from "@/assets/hero-marketplace.jpg";
+import { Link } from "react-router-dom";
 
 interface WelcomeBannerProps {
   userName: string;
@@ -49,19 +50,25 @@ export const WelcomeBanner = ({
           )}
           
           <div className="flex items-center gap-3">
-            <Button className="btn-premium">
-              <Plus className="w-4 h-4 mr-2" />
-              Create New Agent
+            <Button className="btn-premium" asChild>
+              <Link to="/builder">
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Agent
+              </Link>
             </Button>
             
-            <Button variant="outline" className="btn-glass">
-              <Search className="w-4 h-4 mr-2" />
-              Browse Marketplace
+            <Button variant="outline" className="btn-glass" asChild>
+              <Link to="/marketplace">
+                <Search className="w-4 h-4 mr-2" />
+                Browse Marketplace
+              </Link>
             </Button>
             
-            <Button variant="outline" className="btn-glass">
-              <Bot className="w-4 h-4 mr-2" />
-              View My Agents
+            <Button variant="outline" className="btn-glass" asChild>
+              <Link to="/my-agents">
+                <Bot className="w-4 h-4 mr-2" />
+                View My Agents
+              </Link>
             </Button>
           </div>
         </div>
