@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Bot } from "lucide-react";
+import { Plus, Search, Bot, GitBranch } from "lucide-react";
 import heroImage from "@/assets/hero-marketplace.jpg";
 import { Link } from "react-router-dom";
 
@@ -61,6 +61,13 @@ export const WelcomeBanner = ({
               <Link to="/marketplace">
                 <Search className="w-4 h-4 mr-2" />
                 Browse Marketplace
+              </Link>
+            </Button>
+            
+            <Button variant="outline" className="btn-glass" asChild>
+              <Link to="/workflows">
+                <GitBranch className="w-4 h-4 mr-2" />
+                Build Workflow
               </Link>
             </Button>
             

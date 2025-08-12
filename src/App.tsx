@@ -10,6 +10,7 @@ import Marketplace from "./pages/Marketplace";
 import MyAgents from "./pages/MyAgents";
 import Earnings from "./pages/Earnings";
 import Referrals from "./pages/Referrals";
+import Workflows from "./pages/Workflows";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/my-agents" element={<MyAgents />} />
           <Route path="/earnings" element={<Earnings />} />
           <Route path="/referrals" element={<Referrals />} />
+          <Route path="/workflows" element={<Workflows />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

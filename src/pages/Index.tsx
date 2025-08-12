@@ -5,6 +5,7 @@ import { ActivityItem } from "@/components/ActivityItem";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -18,7 +19,8 @@ import {
   MoreHorizontal,
   Filter,
   Plus,
-  Bot
+  Bot,
+  GitBranch
 } from "lucide-react";
 
 const Index = () => {
@@ -145,6 +147,22 @@ const Index = () => {
           onboardingProgress={{ completed: 3, total: 5 }}
         />
 
+        <section className="mb-4">
+          <div className="flex items-center justify-between">
+            <div className="sr-only">
+              <h2>Navigation</h2>
+            </div>
+            <div>
+              <Tabs defaultValue="dashboard">
+                <TabsList>
+                  <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                  <TabsTrigger value="workflows" onClick={() => (window.location.href = '/workflows')}>Workflows</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+        </section>
+
         {/* Dashboard Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -181,12 +199,20 @@ const Index = () => {
                   <h2 className="text-2xl font-bold text-foreground mb-1">My Agents</h2>
                   <p className="text-muted-foreground">Your deployed agents and their performance</p>
                 </div>
-                <Button className="btn-warm" asChild>
-                  <Link to="/builder">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Agent
-                  </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button className="btn-warm" asChild>
+                    <Link to="/builder">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Agent
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="btn-glass" asChild>
+                    <Link to="/workflows">
+                      <GitBranch className="w-4 h-4 mr-2" />
+                      Build Workflow
+                    </Link>
+                  </Button>
+                </div>
               </div>
               
               <div className="card-premium space-y-4">

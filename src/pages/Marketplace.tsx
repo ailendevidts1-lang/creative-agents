@@ -11,12 +11,17 @@ const mockAgents = [
   { id: "4", name: "Contract Analyzer", description: "Flag risks and summarize clauses", category: "Legal", rating: 4.8, runs: 3120, price: 19, avatar: "⚖️" },
 ];
 
+const mockWorkflows = [
+  { id: "w1", name: "Weekly Research Digest", description: "Timer → Research Agent → Summarizer → Email Alert", category: "Workflow", rating: 4.8, runs: 1240, price: 15, avatar: "🧩" },
+  { id: "w2", name: "Lead Nurturing Bundle", description: "Webhook → Qualify → Email Campaign", category: "Workflow", rating: 4.6, runs: 980, price: 19, avatar: "🧩" },
+];
+
 const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background p-6">
       <SEO
-        title="Browse Marketplace – AI Agents"
-        description="Discover, preview, and deploy AI agents created by the community. Filter by category, price, and rating."
+        title="Browse Marketplace – Agents & Workflows"
+        description="Discover, preview, and deploy AI agents and workflow bundles. Filter by category, price, and rating."
         canonical="/marketplace"
       />
 
@@ -40,6 +45,7 @@ const Marketplace = () => {
               <Button variant="outline" className="btn-glass">Marketing</Button>
               <Button variant="outline" className="btn-glass">Sales</Button>
               <Button variant="outline" className="btn-glass">Legal</Button>
+              <Button variant="outline" className="btn-glass">Workflows</Button>
             </div>
           </div>
         </section>
@@ -48,6 +54,17 @@ const Marketplace = () => {
           <div className="grid md:grid-cols-2 gap-4">
             {mockAgents.map((a) => (
               <AgentCard key={a.id} {...a} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <header className="flex items-center justify-between mb-3 mt-6">
+            <h2 className="text-xl font-semibold text-foreground">Workflow Bundles</h2>
+          </header>
+          <div className="grid md:grid-cols-2 gap-4">
+            {mockWorkflows.map((w) => (
+              <AgentCard key={w.id} {...w} />
             ))}
           </div>
         </section>
