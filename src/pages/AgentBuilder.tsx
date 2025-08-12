@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Play, Upload, Globe2, Webhook, Clock8, Wand2, Send, Trash2, CircleSlash2, CheckCircle2 } from "lucide-react";
+import { Save, Play, Upload, Globe2, Webhook, Clock8, Wand2, Send, Trash2, CircleSlash2, CheckCircle2, Image as ImageIcon, FileText, Search } from "lucide-react";
 import { getAgents, saveAgent, deleteAgentById, type AgentModel, type RunModel, saveRun } from "@/utils/agents";
 import { createListing, updateListing, unpublishListing, checkLicense } from "@/utils/marketplaceApi";
 
@@ -18,6 +18,9 @@ const TOOL_OPTIONS = [
   { key: "email", label: "Email", icon: Send },
   { key: "sheets", label: "Spreadsheets", icon: Upload },
   { key: "web_search", label: "Web Search", icon: Globe2 },
+  { key: "web_scraper", label: "Web Scraper", icon: Search },
+  { key: "documents", label: "Document Analyzer", icon: FileText },
+  { key: "image_edit", label: "Image Editing", icon: ImageIcon },
   { key: "webhook", label: "Webhook", icon: Webhook },
 ] as const;
 
@@ -123,6 +126,59 @@ export default function AgentBuilder() {
       instructions,
       updatedAt: new Date().toISOString(),
     }));
+  }
+
+  async function aiGenerateFromPrompt() {
+    try {
+      const prompt = agent.description || testPrompt;
+      if (!prompt) {
+        return shToast({ title: "Enter a description to generate." });
+      }
+      const { data, error } = await supabase.functions.invoke("generate-agent", {
+        body: { prompt },
+      });
+      if (error) throw error;
+      const spec = (data as any)?.spec;
+      if (!spec) throw new Error("No spec returned");
+      setAgent((a) => ({
+        ...a,
+        name: spec.name || a.name,
+        description: spec.description || a.description,
+        category: spec.category || a.category,
+        tags: Array.isArray(spec.tags) ? spec.tags : a.tags,
+        systemPrompt: a.systemPrompt || `You are ${spec.name}. ${spec.personality || "Be helpful and concise."}`,
+        instructions: a.instructions || `Primary goal: ${spec.description}\n\nSteps:\n1) Understand the task\n2) Gather required context\n3) Execute using available tools\n4) Return a clear result`,
+        updatedAt: new Date().toISOString(),
+      }));
+      shToast({ title: "AI draft generated." });
+    } catch (e: any) {
+      toast.error(e?.message || "Generate failed");
+    }
+  }
+
+  function applyMainTemplate() {
+    const defaults = {
+      systemPrompt:
+        "You are a universal automation agent capable of content creation, document analysis, web scraping, and basic image editing. Be safe, precise, and concise.",
+      instructions:
+        "Capabilities:\n- Content creation and editing\n- Document analysis and summarization\n- Web scraping when allowed\n- Basic image editing (e.g., background removal)\n\nGeneral flow:\n1) Understand the user goal\n2) Select appropriate tools\n3) Execute step-by-step\n4) Provide a clear, actionable result",
+      tools: [
+        "web_search",
+        "web_scraper",
+        "documents",
+        "image_edit",
+        "email",
+      ] as string[],
+    };
+    setAgent((a) => ({
+      ...a,
+      templateId: "main",
+      systemPrompt: a.systemPrompt || defaults.systemPrompt,
+      instructions: a.instructions || defaults.instructions,
+      tools: Array.from(new Set([...(a.tools || []), ...defaults.tools])),
+      updatedAt: new Date().toISOString(),
+    }));
+    shToast({ title: "Main template applied." });
   }
 
   function onSaveDraft() {
@@ -285,6 +341,18 @@ export default function AgentBuilder() {
           </div>
         </header>
 
+        {/* Templates */}
+        <section className="card-premium p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Templates</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="btn-glass" onClick={applyMainTemplate}>
+              Apply Main Agent Template
+            </Button>
+          </div>
+        </section>
+
         {/* Prompt → Generate */}
         <section className="card-premium p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -295,12 +363,12 @@ export default function AgentBuilder() {
             onChange={(e) => update("description", e.target.value)}
             placeholder="Describe what the agent should do (e.g., 'Summarize top AI news every morning and email me a bullet list.')"
           />
-          <div className="flex gap-2">
-            <Button className="btn-warm" onClick={() => localGenerateFromPrompt(agent.description || "")}>Generate</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button className="btn-warm" onClick={() => localGenerateFromPrompt(agent.description || "")}>Quick Generate</Button>
+            <Button variant="outline" className="btn-glass" onClick={aiGenerateFromPrompt}>AI Generate</Button>
             <Button variant="outline" className="btn-glass" onClick={() => setAgent(emptyAgent)}>Reset</Button>
           </div>
         </section>
-
         <main className="grid lg:grid-cols-3 gap-6">
           {/* Left: Profile + Behavior */}
           <div className="lg:col-span-2 space-y-6">
@@ -382,6 +450,15 @@ export default function AgentBuilder() {
                           )}
                           {key === "web_search" && (
                             <Input placeholder="Search API key" value={creds.apiKey || ""} onChange={(e) => setIntegration(key, { ...creds, apiKey: e.target.value })} />
+                          )}
+                          {key === "web_scraper" && (
+                            <Input placeholder="Firecrawl API key (kept locally)" value={creds.apiKey || ""} onChange={(e) => setIntegration(key, { ...creds, apiKey: e.target.value })} />
+                          )}
+                          {key === "documents" && (
+                            <Input placeholder="Drive/Storage API token" value={creds.token || ""} onChange={(e) => setIntegration(key, { ...creds, token: e.target.value })} />
+                          )}
+                          {key === "image_edit" && (
+                            <p className="text-xs text-muted-foreground">Uses in-browser models for basic edits (no key required).</p>
                           )}
                           {key === "webhook" && (
                             <Input placeholder="Webhook URL" value={creds.url || ""} onChange={(e) => setIntegration(key, { ...creds, url: e.target.value })} />
