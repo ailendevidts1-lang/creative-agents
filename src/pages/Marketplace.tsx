@@ -20,6 +20,7 @@ const mockWorkflows = [
 const Marketplace = () => {
   const { isAdmin } = useAuthSub();
   const agents = isAdmin ? mockAgents.map(a => ({ ...a, price: 0 })) : mockAgents;
+  return (
     <div className="min-h-screen bg-background p-6">
       <SEO
         title="Browse Marketplace – Agents & Workflows"
