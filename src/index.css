@@ -240,34 +240,34 @@
 }
 
 @layer base {
-  /* Luxury theme overrides: deep charcoal + royal blue, gold, emerald */
+  /* Luxury theme overrides: deep slate + gold */
   .theme-luxury {
-    --background: 220 20% 6%;
+    /* Deep slate surfaces */
+    --background: 220 18% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 220 15% 10%;
+    --card: 220 14% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 220 15% 8%;
+    --popover: 220 14% 10%;
     --popover-foreground: 210 40% 98%;
 
-    /* Royal blue primary */
-    --primary: 225 85% 60%;
-    --primary-foreground: 210 40% 98%;
-    --primary-glow: 225 85% 66%;
+    /* Primary now Gold */
+    --primary: 45 95% 55%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-glow: 45 95% 62%;
 
-    /* Surfaces */
+    /* Slate secondary */
     --secondary: 220 14% 18%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 220 14% 16%;
     --muted-foreground: 215 20% 70%;
 
-    /* Gold accent */
+    /* Accent also Gold for highlights */
     --accent: 45 95% 55%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    /* Emerald success */
     --success: 145 55% 40%;
     --success-foreground: 210 40% 98%;
 
@@ -279,13 +279,13 @@
 
     --border: 220 14% 22%;
     --input: 220 14% 20%;
-    --ring: 225 85% 60%;
+    --ring: 45 95% 55%;
 
-    /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(225 85% 60%), hsl(45 95% 55%));
-    --gradient-warm: linear-gradient(135deg, hsl(45 95% 55%), hsl(145 55% 40%));
-    --gradient-subtle: linear-gradient(180deg, hsl(220 20% 6%), hsl(220 15% 8%));
-    --gradient-glow: linear-gradient(135deg, hsl(225 85% 60% / 0.12), hsl(45 95% 55% / 0.16));
+    /* Gradients: gold + slate glow */
+    --gradient-primary: linear-gradient(135deg, hsl(45 95% 55%), hsl(45 95% 62%));
+    --gradient-warm: linear-gradient(135deg, hsl(45 95% 55%), hsl(45 90% 65%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 18% 7%), hsl(220 14% 10%));
+    --gradient-glow: linear-gradient(135deg, hsl(45 95% 55% / 0.18), hsl(220 18% 30% / 0.12));
 
     /* Shadows */
     --shadow-premium: 0 20px 40px -12px hsl(0 0% 0% / 0.5);

@@ -7,17 +7,17 @@ const Index: React.FC = () => {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Creative Agents",
+    name: "AgentHub",
     description:
-      "Creative Agents is the luxury platform to find, build, and run autonomous AI agents — the Airbnb for AI workers.",
+      "AgentHub is the luxury platform to find, build, and run autonomous AI agents — the App Store for AI workers.",
     url: typeof window !== "undefined" ? window.location.origin : "",
   };
 
   return (
     <>
       <SEO
-        title="Creative Agents — The Airbnb for AI Workers"
-        description="Find, build, and run autonomous AI agents on a luxury-grade platform — the Airbnb for AI workers."
+        title="AgentHub — The App Store for AI Workers"
+        description="Find, build, and run autonomous AI agents on a luxury-grade platform — the App Store for AI workers."
         jsonLd={jsonLd}
       />
 
@@ -25,17 +25,17 @@ const Index: React.FC = () => {
       <section className="relative isolate overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-b from-background/60 to-background/20">
         <img
           src={heroImage}
-          alt="Creative Agents marketplace hero background"
+          alt="AgentHub marketplace hero background"
           className="absolute inset-0 h-full w-full object-cover opacity-30"
           loading="eager"
         />
         <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 sm:py-24">
           <div className="mx-auto max-w-3xl card-glow bg-card/40 backdrop-blur-md rounded-xl border border-border/50 p-8 sm:p-10 animate-enter">
             <h1 className="font-playfair text-4xl sm:text-5xl md:text-6xl leading-tight tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              Creative Agents — The Airbnb for AI Workers
+              AgentHub — The App Store for AI Workers
             </h1>
             <p className="mt-4 text-muted-foreground">
-              Creative Agents is a modern, luxury-grade platform where people can find, build, and run AI-powered workers — called agents — that perform real tasks on their own.
+              AgentHub is a modern, luxury-grade platform where people can find, build, and run AI-powered workers — called agents — that perform real tasks on their own.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <a href="/builder" className="btn-premium">Start Building</a>

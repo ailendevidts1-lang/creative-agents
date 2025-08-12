@@ -37,7 +37,7 @@ const App: React.FC = () => {
         </main>
         <footer className="border-t border-border/40 bg-secondary/30 backdrop-blur supports-[backdrop-filter]:bg-secondary/30">
           <div className="container mx-auto p-6 text-sm text-muted-foreground flex items-center justify-between">
-            <span>© {new Date().getFullYear()} Creative Agents</span>
+            <span>© {new Date().getFullYear()} AgentHub</span>
             <a href="/health" className="story-link">Health</a>
           </div>
         </footer>
