@@ -1,1 +1,10 @@
 project_id = "akdlvhfrslztmhsiurqo"
+
+[functions.generate-agent]
+verify_jwt = false
+
+[functions.generate-workflow]
+verify_jwt = false
+
+[functions.workflow-advisor]
+verify_jwt = false
