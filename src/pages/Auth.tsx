@@ -20,6 +20,15 @@ const Auth = () => {
     if (error) setError(error);
   };
 
+  const handleChoose = async (tier: "Builder" | "Premium" | "Enterprise") => {
+    if (!user) {
+      setMode("login");
+      setError("Please sign in to subscribe to a plan.");
+      return;
+    }
+    await startCheckout(tier);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <SEO
@@ -104,7 +113,7 @@ const Auth = () => {
                     <div className="font-semibold">Builder – €20/mo</div>
                     <div className="text-sm text-muted-foreground">Build agents, Earnings, Sell</div>
                   </div>
-                  <Button className="btn-warm" onClick={() => startCheckout("Builder")}>Choose</Button>
+                  <Button className="btn-warm" onClick={() => handleChoose("Builder")}>Choose</Button>
                 </div>
               </div>
 
@@ -114,7 +123,7 @@ const Auth = () => {
                     <div className="font-semibold">Premium – €50/mo</div>
                     <div className="text-sm text-muted-foreground">Everything in Builder + Workflows</div>
                   </div>
-                  <Button className="btn-warm" onClick={() => startCheckout("Premium")}>Choose</Button>
+                  <Button className="btn-warm" onClick={() => handleChoose("Premium")}>Choose</Button>
                 </div>
               </div>
 
@@ -124,7 +133,7 @@ const Auth = () => {
                     <div className="font-semibold flex items-center gap-2">Enterprise – €100/mo <Crown className="w-4 h-4 text-accent" /></div>
                     <div className="text-sm text-muted-foreground">All features + local agent execution</div>
                   </div>
-                  <Button className="btn-warm" onClick={() => startCheckout("Enterprise")}>Choose</Button>
+                  <Button className="btn-warm" onClick={() => handleChoose("Enterprise")}>Choose</Button>
                 </div>
               </div>
 
