@@ -54,8 +54,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/auth`,
-      cancel_url: `${req.headers.get("origin")}/auth`,
+      success_url: `${req.headers.get("origin")}/auth?checkout=success`,
+      cancel_url: `${req.headers.get("origin")}/auth?checkout=cancel`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

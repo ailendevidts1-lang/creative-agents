@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Check, Lock, LogIn, UserPlus, Crown } from "lucide-react";
 
 const Auth = () => {
-  const { user, login, signUp, logout, subscription, startCheckout, openCustomerPortal, refreshSubscription } = useAuthSub();
+  const { user, login, signUp, logout, subscription, startCheckout, openCustomerPortal, refreshSubscription, isAdmin } = useAuthSub();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,6 +31,13 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
+      refreshSubscription();
+    }
+  }, [user, refreshSubscription]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") && user) {
       refreshSubscription();
     }
   }, [user, refreshSubscription]);
@@ -119,7 +126,28 @@ const Auth = () => {
                     <div className="font-semibold">Builder – €20/mo</div>
                     <div className="text-sm text-muted-foreground">Build agents, Earnings, Sell</div>
                   </div>
-                  <Button className="btn-warm" onClick={() => handleChoose("Builder")}>Choose</Button>
+                  {(() => {
+                    const tierNow = isAdmin ? "Enterprise" : (subscription.subscription_tier || "Free");
+                    if (tierNow === "Builder") {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Button className="btn-warm" asChild>
+                            <a href="/builder">Continue</a>
+                          </Button>
+                          <Button variant="outline" className="btn-glass" onClick={openCustomerPortal}>Manage</Button>
+                        </div>
+                      );
+                    }
+                    if (tierNow === "Premium" || tierNow === "Enterprise") {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" className="btn-glass" disabled>Included</Button>
+                          <Button variant="outline" className="btn-glass" onClick={openCustomerPortal}>Manage</Button>
+                        </div>
+                      );
+                    }
+                    return <Button className="btn-warm" onClick={() => handleChoose("Builder")}>Choose</Button>;
+                  })()}
                 </div>
               </div>
 
@@ -129,7 +157,28 @@ const Auth = () => {
                     <div className="font-semibold">Premium – €50/mo</div>
                     <div className="text-sm text-muted-foreground">Everything in Builder + Workflows</div>
                   </div>
-                  <Button className="btn-warm" onClick={() => handleChoose("Premium")}>Choose</Button>
+                  {(() => {
+                    const tierNow = isAdmin ? "Enterprise" : (subscription.subscription_tier || "Free");
+                    if (tierNow === "Premium") {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Button className="btn-warm" asChild>
+                            <a href="/workflows">Continue</a>
+                          </Button>
+                          <Button variant="outline" className="btn-glass" onClick={openCustomerPortal}>Manage</Button>
+                        </div>
+                      );
+                    }
+                    if (tierNow === "Enterprise") {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" className="btn-glass" disabled>Included</Button>
+                          <Button variant="outline" className="btn-glass" onClick={openCustomerPortal}>Manage</Button>
+                        </div>
+                      );
+                    }
+                    return <Button className="btn-warm" onClick={() => handleChoose("Premium")}>Choose</Button>;
+                  })()}
                 </div>
               </div>
 
@@ -139,7 +188,20 @@ const Auth = () => {
                     <div className="font-semibold flex items-center gap-2">Enterprise – €100/mo <Crown className="w-4 h-4 text-accent" /></div>
                     <div className="text-sm text-muted-foreground">All features + local agent execution</div>
                   </div>
-                  <Button className="btn-warm" onClick={() => handleChoose("Enterprise")}>Choose</Button>
+                  {(() => {
+                    const tierNow = isAdmin ? "Enterprise" : (subscription.subscription_tier || "Free");
+                    if (tierNow === "Enterprise") {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Button className="btn-warm" asChild>
+                            <a href="/workflows">Continue</a>
+                          </Button>
+                          <Button variant="outline" className="btn-glass" onClick={openCustomerPortal}>Manage</Button>
+                        </div>
+                      );
+                    }
+                    return <Button className="btn-warm" onClick={() => handleChoose("Enterprise")}>Choose</Button>;
+                  })()}
                 </div>
               </div>
 

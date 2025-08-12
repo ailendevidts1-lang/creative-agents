@@ -35,15 +35,19 @@ serve(async (req) => {
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) {
-      await supabaseService.from("subscribers").upsert({
-        email: user.email,
-        user_id: user.id,
-        stripe_customer_id: null,
-        subscribed: false,
-        subscription_tier: null,
-        subscription_end: null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'email' });
+      try {
+        await supabaseService.from("subscribers").upsert({
+          email: user.email,
+          user_id: user.id,
+          stripe_customer_id: null,
+          subscribed: false,
+          subscription_tier: null,
+          subscription_end: null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'email' });
+      } catch (e) {
+        log("DB upsert (no customer) failed, continuing without DB", (e as Error).message);
+      }
       return new Response(JSON.stringify({ subscribed: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -65,15 +69,19 @@ serve(async (req) => {
       else tier = "Enterprise";
     }
 
-    await supabaseService.from("subscribers").upsert({
-      email: user.email,
-      user_id: user.id,
-      stripe_customer_id: customerId,
-      subscribed: hasActive,
-      subscription_tier: tier,
-      subscription_end: endAt,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'email' });
+    try {
+      await supabaseService.from("subscribers").upsert({
+        email: user.email,
+        user_id: user.id,
+        stripe_customer_id: customerId,
+        subscribed: hasActive,
+        subscription_tier: tier,
+        subscription_end: endAt,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'email' });
+    } catch (e) {
+      log("DB upsert (final) failed, continuing without DB", (e as Error).message);
+    }
 
     return new Response(JSON.stringify({ subscribed: hasActive, subscription_tier: tier, subscription_end: endAt }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200
