@@ -80,7 +80,7 @@ Return ONLY JSON with keys: name, description, category, tags, personality, acti
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4.1-2025-04-14",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
@@ -91,9 +91,18 @@ Return ONLY JSON with keys: name, description, category, tags, personality, acti
 
     if (!response.ok) {
       const errText = await response.text();
-      return new Response(JSON.stringify({ error: "OpenAI request failed", details: errText }), {
+      const fallback: AgentSpec = {
+        name: "Draft Agent",
+        description: "Auto-generated from your prompt while AI is unavailable.",
+        category: "General",
+        tags: ["agent", "draft"],
+        personality: "Helpful and concise",
+        actions: ["answer questions", "summarize"],
+        knowledge: [],
+      };
+      return new Response(JSON.stringify({ spec: fallback, warning: "ai-fallback", details: errText }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: 200,
       });
     }
 
@@ -123,9 +132,18 @@ Return ONLY JSON with keys: name, description, category, tags, personality, acti
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    const fallback: AgentSpec = {
+      name: "Draft Agent",
+      description: "Auto-generated from your prompt while AI is unavailable.",
+      category: "General",
+      tags: ["agent", "draft"],
+      personality: "Helpful and concise",
+      actions: ["answer questions", "summarize"],
+      knowledge: [],
+    };
+    return new Response(JSON.stringify({ spec: fallback, warning: "ai-fallback", error: String(error) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 200,
     });
   }
 });
