@@ -21,6 +21,7 @@ export default {
 			fontFamily: {
 				heading: ["Outfit", "ui-sans-serif", "system-ui", "sans-serif"],
 				body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+				playfair: ["Playfair Display", "serif"],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
