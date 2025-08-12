@@ -29,20 +29,87 @@ const AgentBuilder = () => {
     selectedIntegrations: [] as string[],
   });
 
+  // Local fallback profile writer when AI is unavailable or quota is exceeded
+  const localProfileFromPrompt = (p: string) => {
+    const text = (p || '').trim();
+    const normalized = text.toLowerCase();
+
+    // Name: Title case from key nouns
+    const words = text.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+    const key = words.slice(0, 4).map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    let name = key || 'Custom Agent';
+    if (/calculator|calc|math|compute/.test(normalized)) name = 'Advanced Calculator';
+    if (/research|analy(s|z)e|insight|market/.test(normalized)) name = 'Research Assistant Pro';
+    if (/email|gmail|inbox/.test(normalized)) name = 'Smart Email Assistant';
+
+    // Category inference
+    let category = 'General';
+    if (/research|analysis|insight|market|trend/.test(normalized)) category = 'Research';
+    else if (/support|helpdesk|chat|bot/.test(normalized)) category = 'Support';
+    else if (/sales|crm|lead/.test(normalized)) category = 'Sales';
+    else if (/finance|invoice|billing|account/.test(normalized)) category = 'Finance';
+    else if (/developer|code|git|deploy/.test(normalized)) category = 'Developer Tools';
+
+    // Description
+    const description = `An AI agent that ${text.replace(/^create(\s+a[n]?|)\s*/i, '').replace(/^build(\s+a[n]?|)\s*/i, '')}`.trim();
+
+    // Tags from keywords
+    const tagSeeds = Array.from(new Set(normalized
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t.length > 3 && !/(this|that|with|from|into|your|their|about|which|will|have|been|for|and|the|you|are|can|into|over|like|make|able)/.test(t))
+    ));
+    const tags = tagSeeds.slice(0, 6);
+
+    // Personality and actions heuristics
+    const personality = /professional|enterprise/.test(normalized)
+      ? 'Professional, precise, and reliable'
+      : 'Helpful, concise, and friendly';
+
+    const actions: string[] = [];
+    if (/summar(y|ise)|digest|tl;dr|summary/.test(normalized)) actions.push('summarize content');
+    if (/email|gmail|inbox/.test(normalized)) actions.push('draft and send emails');
+    if (/research|crawl|scrape|web/.test(normalized)) actions.push('research and extract insights');
+    if (/calculator|calc|math|compute/.test(normalized)) actions.push('perform calculations');
+    if (/schedule|calendar|remind/.test(normalized)) actions.push('manage schedules and reminders');
+
+    // Knowledge sources placeholder (user can add later)
+    const knowledge: string[] = [];
+
+    return { name, category, description, tags, personality, actions, knowledge };
+  };
+
   const handleGenerate = async () => {
     try {
       setGenerating(true);
+
+      // Try edge function first
       const { data, error } = await supabase.functions.invoke("generate-agent", { body: { prompt } });
-      if (error) throw new Error(error.message || "Failed to generate agent");
       const spec = data?.spec || {};
+      const isAIFallback = !!error || data?.warning === 'ai-fallback' || spec?.name === 'Draft Agent';
 
-      const name = spec.name ?? agent.name;
-      const category = spec.category ?? agent.category;
-      const description = spec.description ?? agent.description;
-      const tagsArr = Array.isArray(spec.tags) ? spec.tags : (agent.tags ? agent.tags.split(',').map(t=>t.trim()).filter(Boolean) : []);
-      const actionsArr = Array.isArray(spec.actions) ? spec.actions : (agent.actions ? agent.actions.split(',').map(t=>t.trim()).filter(Boolean) : []);
-      const knowledgeArr = Array.isArray(spec.knowledge) ? spec.knowledge : (agent.knowledge ? agent.knowledge.split(',').map(t=>t.trim()).filter(Boolean) : []);
+      // Decide source: AI spec or local writer
+      const local = isAIFallback ? localProfileFromPrompt(prompt) : null;
 
+      const name = (isAIFallback ? local?.name : spec.name) ?? agent.name;
+      const category = (isAIFallback ? local?.category : spec.category) ?? agent.category;
+      const description = (isAIFallback ? local?.description : spec.description) ?? agent.description;
+
+      const tagsArr = isAIFallback
+        ? (local?.tags || [])
+        : (Array.isArray(spec.tags) ? spec.tags : (agent.tags ? agent.tags.split(',').map(t=>t.trim()).filter(Boolean) : []));
+
+      const actionsArr = isAIFallback
+        ? (local?.actions || [])
+        : (Array.isArray(spec.actions) ? spec.actions : (agent.actions ? agent.actions.split(',').map(t=>t.trim()).filter(Boolean) : []));
+
+      const knowledgeArr = isAIFallback
+        ? (local?.knowledge || [])
+        : (Array.isArray(spec.knowledge) ? spec.knowledge : (agent.knowledge ? agent.knowledge.split(',').map(t=>t.trim()).filter(Boolean) : []));
+
+      const personality = (isAIFallback ? local?.personality : spec.personality) ?? agent.personality;
+
+      // Recommend integrations from context
       const haystack = [
         ...tagsArr,
         ...actionsArr,
@@ -62,14 +129,18 @@ const AgentBuilder = () => {
         name,
         category,
         description,
-        tags: tagsArr.join(", "),
-        personality: spec.personality ?? prev.personality,
-        actions: actionsArr.join(", "),
-        knowledge: knowledgeArr.join(", "),
+        tags: (Array.isArray(tagsArr) ? tagsArr : []).join(", "),
+        personality,
+        actions: (Array.isArray(actionsArr) ? actionsArr : []).join(", "),
+        knowledge: (Array.isArray(knowledgeArr) ? knowledgeArr : []).join(", "),
         avatarUrl,
         selectedIntegrations: Array.from(new Set([...(prev.selectedIntegrations || []), ...recommended]))
       }));
-      toast({ title: "Agent generated", description: "Auto-filled profile, behavior, avatar, and integrations." });
+
+      toast({
+        title: isAIFallback ? 'Used local profile writer' : 'Agent generated',
+        description: isAIFallback ? 'AI quota unavailable; generated a smart profile locally.' : 'Auto-filled profile, behavior, avatar, and integrations.'
+      });
     } catch (e) {
       toast({ title: "Generation failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     } finally {
