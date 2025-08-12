@@ -14,7 +14,7 @@ import Workflows from "./pages/Workflows";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthSubscriptionProvider } from "./context/AuthSubscriptionProvider";
-
+import NavBar from "./components/NavBar";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -24,6 +24,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <NavBar />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

@@ -9,18 +9,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ allowedTiers, children }: ProtectedRouteProps) => {
-  const { user, isAdmin, subscription, subscriptionLoading } = useAuthSub();
+  const { user, isAdmin, subscription, subscriptionLoading, authLoading } = useAuthSub();
+
+  // Still loading auth or subscription status
+  if (authLoading || subscriptionLoading) {
+    return <div className="p-6 text-muted-foreground">Checking your access...</div>;
+  }
 
   // Admin bypass - full access
   if (isAdmin) return <>{children}</>;
   
   // Not logged in
   if (!user) return <Navigate to="/auth" replace />;
-
-  // Still loading subscription status
-  if (subscriptionLoading) {
-    return <div className="p-6 text-muted-foreground">Checking your access...</div>;
-  }
 
   const tier = subscription.subscription_tier;
   
