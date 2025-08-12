@@ -7,14 +7,14 @@ import { Upload, Settings2, PlayCircle, Save, Send, BookTemplate, Crown, Sparkle
 import { useAuthSub } from "@/context/AuthSubscriptionProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useNavigate } from "react-router-dom";
 const AgentBuilder = () => {
   const { isAdmin, subscription, startCheckout } = useAuthSub();
   const { toast } = useToast();
   const isEnterprise = subscription.subscription_tier === "Enterprise";
   const isPremiumOrEnterprise = subscription.subscription_tier === "Premium" || isEnterprise;
   const isBuilderOrHigher = subscription.subscription_tier === "Builder" || isPremiumOrEnterprise || isAdmin;
-
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [agent, setAgent] = useState({
@@ -25,6 +25,8 @@ const AgentBuilder = () => {
     personality: "",
     actions: "",
     knowledge: "",
+    avatarUrl: "",
+    selectedIntegrations: [] as string[],
   });
 
   const handleGenerate = async () => {
@@ -33,17 +35,41 @@ const AgentBuilder = () => {
       const { data, error } = await supabase.functions.invoke("generate-agent", { body: { prompt } });
       if (error) throw new Error(error.message || "Failed to generate agent");
       const spec = data?.spec || {};
+
+      const name = spec.name ?? agent.name;
+      const category = spec.category ?? agent.category;
+      const description = spec.description ?? agent.description;
+      const tagsArr = Array.isArray(spec.tags) ? spec.tags : (agent.tags ? agent.tags.split(',').map(t=>t.trim()).filter(Boolean) : []);
+      const actionsArr = Array.isArray(spec.actions) ? spec.actions : (agent.actions ? agent.actions.split(',').map(t=>t.trim()).filter(Boolean) : []);
+      const knowledgeArr = Array.isArray(spec.knowledge) ? spec.knowledge : (agent.knowledge ? agent.knowledge.split(',').map(t=>t.trim()).filter(Boolean) : []);
+
+      const haystack = [
+        ...tagsArr,
+        ...actionsArr,
+        ...knowledgeArr,
+        String(description || ''),
+        String(name || ''),
+      ].join(' ').toLowerCase();
+      const recommended: string[] = [];
+      if (/(email|gmail|mail)/.test(haystack)) recommended.push('Gmail');
+      if (/(slack|chatops)/.test(haystack)) recommended.push('Slack');
+      if (/(crm|salesforce|hubspot|pipedrive)/.test(haystack)) recommended.push('CRM');
+
+      const avatarUrl = `https://api.dicebear.com/8.x/thumbs/svg?seed=${encodeURIComponent(name || 'Agent')}&backgroundColor=b6e3f4,c0aede,d1d4f9&radius=50`;
+
       setAgent((prev) => ({
         ...prev,
-        name: spec.name ?? prev.name,
-        category: spec.category ?? prev.category,
-        description: spec.description ?? prev.description,
-        tags: Array.isArray(spec.tags) ? spec.tags.join(", ") : (prev.tags || ""),
+        name,
+        category,
+        description,
+        tags: tagsArr.join(", "),
         personality: spec.personality ?? prev.personality,
-        actions: Array.isArray(spec.actions) ? spec.actions.join(", ") : (prev.actions || ""),
-        knowledge: Array.isArray(spec.knowledge) ? spec.knowledge.join(", ") : (prev.knowledge || ""),
+        actions: actionsArr.join(", "),
+        knowledge: knowledgeArr.join(", "),
+        avatarUrl,
+        selectedIntegrations: Array.from(new Set([...(prev.selectedIntegrations || []), ...recommended]))
       }));
-      toast({ title: "Agent generated", description: "Fields pre-filled from your prompt." });
+      toast({ title: "Agent generated", description: "Auto-filled profile, behavior, avatar, and integrations." });
     } catch (e) {
       toast({ title: "Generation failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     } finally {
@@ -61,6 +87,8 @@ const AgentBuilder = () => {
       personality: agent.personality?.trim() || "",
       actions: agent.actions.split(",").map((t) => t.trim()).filter(Boolean),
       knowledge: agent.knowledge.split(",").map((t) => t.trim()).filter(Boolean),
+      avatarUrl: agent.avatarUrl,
+      integrations: agent.selectedIntegrations,
       status,
       createdAt: new Date().toISOString(),
     };
@@ -151,6 +179,18 @@ const AgentBuilder = () => {
           {/* Agent Profile */}
           <article className="card-premium space-y-4">
             <h2 className="text-lg font-semibold text-foreground">Agent Profile</h2>
+            <div className="flex items-center gap-4">
+              <img
+                src={agent.avatarUrl || `https://api.dicebear.com/8.x/thumbs/svg?seed=${encodeURIComponent(agent.name || 'Agent')}&backgroundColor=b6e3f4,c0aede,d1d4f9&radius=50`}
+                alt={`${agent.name || 'Agent'} avatar`}
+                loading="lazy"
+                className="w-16 h-16 rounded-md border border-border/40 bg-card"
+              />
+              <Button variant="outline" className="btn-glass">
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Icon/Avatar
+              </Button>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-muted-foreground">Name</label>
@@ -233,9 +273,18 @@ const AgentBuilder = () => {
               )}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="outline" className="btn-glass">Connect Gmail</Button>
-              <Button variant="outline" className="btn-glass">Connect Slack</Button>
-              <Button variant="outline" className="btn-glass">Connect CRM</Button>
+              {agent.selectedIntegrations?.length ? (
+                agent.selectedIntegrations.map((intg) => (
+                  <span key={intg} className="px-2 py-1 rounded-md border border-border/40 text-xs bg-card/70">{intg}</span>
+                ))
+              ) : (
+                <div className="text-xs text-muted-foreground">No integrations selected yet. Generate from prompt to auto-select.</div>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button variant="outline" className="btn-glass" onClick={() => setAgent(a => ({...a, selectedIntegrations: Array.from(new Set([...(a.selectedIntegrations||[]), 'Gmail']))}))}>Connect Gmail</Button>
+              <Button variant="outline" className="btn-glass" onClick={() => setAgent(a => ({...a, selectedIntegrations: Array.from(new Set([...(a.selectedIntegrations||[]), 'Slack']))}))}>Connect Slack</Button>
+              <Button variant="outline" className="btn-glass" onClick={() => setAgent(a => ({...a, selectedIntegrations: Array.from(new Set([...(a.selectedIntegrations||[]), 'CRM']))}))}>Connect CRM</Button>
               {isEnterprise && (
                 <>
                   <Button variant="outline" className="btn-glass">
@@ -269,11 +318,11 @@ const AgentBuilder = () => {
                   <Save className="w-4 h-4 mr-2" />
                   Save Draft
                 </Button>
-                <Button variant="outline" className="btn-glass">
+                <Button variant="outline" className="btn-glass" onClick={() => navigate('/sandbox', { state: { agent } })}>
                   <PlayCircle className="w-4 h-4 mr-2" />
                   Test Agent
                 </Button>
-                <Button onClick={() => saveAgent("published")}>
+                <Button onClick={() => navigate('/publish-agent', { state: { agent } })}>
                   <Send className="w-4 h-4 mr-2" />
                   Publish Agent
                 </Button>

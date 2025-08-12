@@ -1,23 +1,22 @@
-
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bot, Play, LineChart, Share2, Pencil, Crown, Server } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthSub } from "@/context/AuthSubscriptionProvider";
-
-const myAgents = [
-  { name: "My Research Bot", category: "Research", status: "active" as const, lastRun: "2h ago" },
-  { name: "Sales Analyzer", category: "Analytics", status: "scheduled" as const, lastRun: "1d ago" },
-  { name: "Content Writer", category: "Content", status: "paused" as const, lastRun: "3d ago" },
-];
+import { useEffect, useState } from "react";
 
 const MyAgents = () => {
   const navigate = useNavigate();
   const { isAdmin, subscription } = useAuthSub();
   const isEnterprise = subscription.subscription_tier === "Enterprise";
-
-  return (
+  const [agents, setAgents] = useState<any[]>([]);
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("agents") || "[]");
+      setAgents(stored);
+    } catch (_) {}
+  }, []);
     <div className="min-h-screen bg-background p-6">
       <SEO
         title="My Agents – Dashboard"
@@ -38,54 +37,56 @@ const MyAgents = () => {
 
       <main className="max-w-7xl mx-auto space-y-6">
         <section className="card-premium space-y-3">
-          {myAgents.map((agent) => (
-            <div key={agent.name} className="flex items-center justify-between p-4 rounded-lg border border-border/30 bg-card/50">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <div className="font-medium text-foreground">{agent.name}</div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="secondary" className="text-xs">{agent.category}</Badge>
-                    <span>•</span>
-                    <span>Last run {agent.lastRun}</span>
-                    {isEnterprise && (
-                      <>
-                        <span>•</span>
-                        <span className="text-accent">Local execution ready</span>
-                      </>
+          {agents.length === 0 ? (
+            <div className="p-6 text-sm text-muted-foreground">No agents yet. Go to Builder to create one.</div>
+          ) : (
+            agents.map((agent) => (
+              <div key={agent.id} className="flex items-center justify-between p-4 rounded-lg border border-border/30 bg-card/50">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+                    {agent.avatarUrl ? (
+                      <img src={agent.avatarUrl} alt={`${agent.name} avatar`} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <Bot className="w-5 h-5 text-primary" />
                     )}
                   </div>
+                  <div>
+                    <div className="font-medium text-foreground">{agent.name}</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Badge variant="secondary" className="text-xs">{agent.category || 'General'}</Badge>
+                      <span>•</span>
+                      <span className="capitalize">{agent.status || 'draft'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="btn-glass" onClick={() => navigate('/sandbox', { state: { agent } })}>
+                    <Play className="w-3 h-3" />
+                    Run Now
+                  </Button>
+                  {isEnterprise && (
+                    <Button size="sm" variant="outline" className="btn-glass">
+                      <Server className="w-3 h-3" />
+                      Run Local
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" className="btn-glass" onClick={() => navigate('/builder')}>
+                    <Pencil className="w-3 h-3" />
+                    Edit
+                  </Button>
+                  <Button size="sm" variant="outline" className="btn-glass" onClick={() => navigate('/earnings')}>
+                    <LineChart className="w-3 h-3" />
+                    Analytics
+                  </Button>
+                  <Button size="sm" onClick={() => navigate('/publish-agent', { state: { agent } })}>
+                    <Share2 className="w-3 h-3" />
+                    Publish
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="btn-glass">
-                  <Play className="w-3 h-3" />
-                  Run Now
-                </Button>
-                {isEnterprise && (
-                  <Button size="sm" variant="outline" className="btn-glass">
-                    <Server className="w-3 h-3" />
-                    Run Local
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" className="btn-glass" onClick={() => navigate('/builder')}>
-                  <Pencil className="w-3 h-3" />
-                  Edit
-                </Button>
-                <Button size="sm" variant="outline" className="btn-glass" onClick={() => navigate('/earnings')}>
-                  <LineChart className="w-3 h-3" />
-                  Analytics
-                </Button>
-                <Button size="sm">
-                  <Share2 className="w-3 h-3" />
-                  Publish
-                </Button>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </section>
 
         {isEnterprise && (

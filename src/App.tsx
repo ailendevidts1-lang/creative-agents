@@ -15,6 +15,8 @@ import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthSubscriptionProvider } from "./context/AuthSubscriptionProvider";
 import NavBar from "./components/NavBar";
+import AgentSandbox from "./pages/AgentSandbox";
+import PublishAgent from "./pages/PublishAgent";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -55,6 +57,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/sandbox" element={<AgentSandbox />} />
+            <Route path="/publish-agent" element={<PublishAgent />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
