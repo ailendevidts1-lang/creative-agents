@@ -39,7 +39,7 @@ const App = () => (
               }
             />
             <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/my-agents" element={<MyAgents />} />
+            <Route path="/agents" element={<MyAgents />} />
             <Route
               path="/earnings"
               element={
