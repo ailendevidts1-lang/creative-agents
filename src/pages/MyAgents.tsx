@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const MyAgents = () => {
   const navigate = useNavigate();
-  const { isAdmin, subscription } = useAuthSub();
+  const { subscription } = useAuthSub();
   const isEnterprise = subscription.subscription_tier === "Enterprise";
   const [agents, setAgents] = useState<any[]>([]);
   useEffect(() => {
@@ -17,6 +17,7 @@ const MyAgents = () => {
       setAgents(stored);
     } catch (_) {}
   }, []);
+  return (
     <div className="min-h-screen bg-background p-6">
       <SEO
         title="My Agents – Dashboard"
