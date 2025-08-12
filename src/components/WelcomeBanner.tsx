@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Bot, GitBranch } from "lucide-react";
+import { Plus, Search, Bot, GitBranch, LogIn } from "lucide-react";
 import heroImage from "@/assets/hero-marketplace.jpg";
 import { Link } from "react-router-dom";
+import { useAuthSub } from "@/context/AuthSubscriptionProvider";
 
 interface WelcomeBannerProps {
   userName: string;
@@ -16,6 +17,10 @@ export const WelcomeBanner = ({
   userName, 
   onboardingProgress 
 }: WelcomeBannerProps) => {
+  const { user, isAdmin, subscription } = useAuthSub();
+  const tier = subscription.subscription_tier;
+  const canBuild = isAdmin || (["Builder", "Premium", "Enterprise"].includes((tier as any) || ""));
+  const canWorkflows = isAdmin || (["Premium", "Enterprise"].includes((tier as any) || ""));
   return (
     <div className="card-premium relative overflow-hidden">
       <div 
@@ -50,27 +55,38 @@ export const WelcomeBanner = ({
           )}
           
           <div className="flex items-center gap-3">
-            <Button className="btn-premium" asChild>
-              <Link to="/builder">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Agent
+            <Button variant="outline" className="btn-glass" asChild>
+              <Link to="/auth">
+                <LogIn className="w-4 h-4 mr-2" />
+                Get Started
               </Link>
             </Button>
-            
+
+            {canBuild && (
+              <Button className="btn-premium" asChild>
+                <Link to="/builder">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Agent
+                </Link>
+              </Button>
+            )}
+
             <Button variant="outline" className="btn-glass" asChild>
               <Link to="/marketplace">
                 <Search className="w-4 h-4 mr-2" />
                 Browse Marketplace
               </Link>
             </Button>
-            
-            <Button variant="outline" className="btn-glass" asChild>
-              <Link to="/workflows">
-                <GitBranch className="w-4 h-4 mr-2" />
-                Build Workflow
-              </Link>
-            </Button>
-            
+
+            {canWorkflows && (
+              <Button variant="outline" className="btn-glass" asChild>
+                <Link to="/workflows">
+                  <GitBranch className="w-4 h-4 mr-2" />
+                  Build Workflow
+                </Link>
+              </Button>
+            )}
+
             <Button variant="outline" className="btn-glass" asChild>
               <Link to="/my-agents">
                 <Bot className="w-4 h-4 mr-2" />

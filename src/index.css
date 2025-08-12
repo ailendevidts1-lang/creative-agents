@@ -6,40 +6,40 @@
 
 @layer base {
   :root {
-    /* Core Brand Colors - Deep purples with warm accents */
-    --background: 250 100% 99%;
-    --foreground: 260 15% 8%;
+    /* Core Brand Colors - Deep slate with gold accents */
+    --background: 210 15% 98%;
+    --foreground: 220 15% 12%;
 
-    /* Card System - Subtle warm tones */
-    --card: 250 50% 98%;
-    --card-foreground: 260 15% 8%;
+    /* Card System - subtle slate */
+    --card: 210 20% 99%;
+    --card-foreground: 220 15% 12%;
 
     /* Interactive Elements */
-    --popover: 250 100% 99%;
-    --popover-foreground: 260 15% 8%;
+    --popover: 210 15% 98%;
+    --popover-foreground: 220 15% 12%;
 
-    /* Primary Brand - Deep sophisticated purple */
-    --primary: 260 75% 25%;
-    --primary-foreground: 250 100% 99%;
-    --primary-glow: 260 75% 35%;
+    /* Primary Brand - Deep slate */
+    --primary: 220 18% 20%;
+    --primary-foreground: 210 20% 96%;
+    --primary-glow: 220 18% 30%;
 
-    /* Secondary - Warm orange accent */
-    --secondary: 25 95% 95%;
-    --secondary-foreground: 25 85% 25%;
+    /* Secondary - Soft slate */
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 18% 22%;
 
-    /* Muted tones - Warm grays */
-    --muted: 250 20% 96%;
-    --muted-foreground: 260 10% 45%;
+    /* Muted tones - cool grays */
+    --muted: 220 15% 95%;
+    --muted-foreground: 220 8% 45%;
 
-    /* Accent - Vibrant orange for highlights */
-    --accent: 25 95% 55%;
-    --accent-foreground: 250 100% 99%;
+    /* Accent - Gold */
+    --accent: 45 95% 55%;
+    --accent-foreground: 220 20% 12%;
 
     /* Success & Status Colors */
-    --success: 145 65% 45%;
-    --success-foreground: 250 100% 99%;
-    --warning: 35 95% 55%;
-    --warning-foreground: 250 100% 99%;
+    --success: 145 55% 40%;
+    --success-foreground: 210 20% 96%;
+    --warning: 40 95% 55%;
+    --warning-foreground: 220 20% 12%;
 
     /* Destructive */
     --destructive: 0 85% 60%;
@@ -51,15 +51,15 @@
     --ring: 260 75% 25%;
 
     /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(260 75% 25%), hsl(280 65% 35%));
-    --gradient-warm: linear-gradient(135deg, hsl(25 95% 55%), hsl(35 85% 65%));
-    --gradient-subtle: linear-gradient(180deg, hsl(250 50% 98%), hsl(250 30% 96%));
-    --gradient-glow: linear-gradient(135deg, hsl(260 75% 35% / 0.1), hsl(25 95% 55% / 0.1));
+    --gradient-primary: linear-gradient(135deg, hsl(220 18% 20%), hsl(220 18% 30%));
+    --gradient-warm: linear-gradient(135deg, hsl(45 95% 55%), hsl(50 90% 60%));
+    --gradient-subtle: linear-gradient(180deg, hsl(210 20% 99%), hsl(210 15% 96%));
+    --gradient-glow: linear-gradient(135deg, hsl(220 18% 30% / 0.08), hsl(45 95% 55% / 0.12));
 
     /* Shadows & Effects */
-    --shadow-premium: 0 20px 40px -12px hsl(260 75% 25% / 0.15);
-    --shadow-glow: 0 0 30px hsl(260 75% 35% / 0.3);
-    --shadow-warm: 0 10px 30px -10px hsl(25 95% 55% / 0.2);
+    --shadow-premium: 0 20px 40px -12px hsl(220 18% 20% / 0.15);
+    --shadow-glow: 0 0 30px hsl(45 95% 55% / 0.25);
+    --shadow-warm: 0 10px 30px -10px hsl(45 95% 55% / 0.2);
 
     /* Animations */
     --transition-premium: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);

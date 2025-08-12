@@ -11,28 +11,55 @@ import MyAgents from "./pages/MyAgents";
 import Earnings from "./pages/Earnings";
 import Referrals from "./pages/Referrals";
 import Workflows from "./pages/Workflows";
+import Auth from "./pages/Auth";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthSubscriptionProvider } from "./context/AuthSubscriptionProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/builder" element={<AgentBuilder />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/my-agents" element={<MyAgents />} />
-          <Route path="/earnings" element={<Earnings />} />
-          <Route path="/referrals" element={<Referrals />} />
-          <Route path="/workflows" element={<Workflows />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthSubscriptionProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/builder"
+              element={
+                <ProtectedRoute allowedTiers={["Builder", "Premium", "Enterprise"]}>
+                  <AgentBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/my-agents" element={<MyAgents />} />
+            <Route
+              path="/earnings"
+              element={
+                <ProtectedRoute allowedTiers={["Builder", "Premium", "Enterprise"]}>
+                  <Earnings />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/referrals" element={<Referrals />} />
+            <Route
+              path="/workflows"
+              element={
+                <ProtectedRoute allowedTiers={["Premium", "Enterprise"]}>
+                  <Workflows />
+                </ProtectedRoute>
+              }
+            />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthSubscriptionProvider>
   </QueryClientProvider>
 );
 

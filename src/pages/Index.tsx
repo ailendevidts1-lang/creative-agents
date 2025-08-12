@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuthSub } from "@/context/AuthSubscriptionProvider";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -24,6 +25,10 @@ import {
 } from "lucide-react";
 
 const Index = () => {
+  const { isAdmin, subscription } = useAuthSub();
+  const tier = subscription.subscription_tier;
+  const canBuild = isAdmin || (["Builder", "Premium", "Enterprise"].includes((tier as any) || ""));
+  const canWorkflows = isAdmin || (["Premium", "Enterprise"].includes((tier as any) || ""));
   // Mock data
   const featuredAgents = [
     {
@@ -137,6 +142,7 @@ const Index = () => {
       agentName: "Code Review Assistant"
     }
   ];
+  const featuredForDisplay = isAdmin ? featuredAgents.map((a) => ({ ...a, price: 0 })) : featuredAgents;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -156,7 +162,9 @@ const Index = () => {
               <Tabs defaultValue="dashboard">
                 <TabsList>
                   <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                  <TabsTrigger value="workflows" onClick={() => (window.location.href = '/workflows')}>Workflows</TabsTrigger>
+                  {canWorkflows && (
+                    <TabsTrigger value="workflows" onClick={() => (window.location.href = '/workflows')}>Workflows</TabsTrigger>
+                  )}
                 </TabsList>
               </Tabs>
             </div>
@@ -186,7 +194,7 @@ const Index = () => {
               </div>
               
               <div className="grid md:grid-cols-2 gap-4">
-                {featuredAgents.map((agent) => (
+                {featuredForDisplay.map((agent) => (
                   <AgentCard key={agent.id} {...agent} />
                 ))}
               </div>
@@ -200,18 +208,22 @@ const Index = () => {
                   <p className="text-muted-foreground">Your deployed agents and their performance</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button className="btn-warm" asChild>
-                    <Link to="/builder">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Agent
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="btn-glass" asChild>
-                    <Link to="/workflows">
-                      <GitBranch className="w-4 h-4 mr-2" />
-                      Build Workflow
-                    </Link>
-                  </Button>
+                  {canBuild && (
+                    <Button className="btn-warm" asChild>
+                      <Link to="/builder">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Agent
+                      </Link>
+                    </Button>
+                  )}
+                  {canWorkflows && (
+                    <Button variant="outline" className="btn-glass" asChild>
+                      <Link to="/workflows">
+                        <GitBranch className="w-4 h-4 mr-2" />
+                        Build Workflow
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
               

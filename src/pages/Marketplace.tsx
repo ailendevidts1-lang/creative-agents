@@ -3,6 +3,7 @@ import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Filter } from "lucide-react";
+import { useAuthSub } from "@/context/AuthSubscriptionProvider";
 
 const mockAgents = [
   { id: "1", name: "Research Assistant Pro", description: "Market research & competitive analysis", category: "Research", rating: 4.9, runs: 15420, price: 12, avatar: "🔍", isPopular: true },
@@ -17,7 +18,8 @@ const mockWorkflows = [
 ];
 
 const Marketplace = () => {
-  return (
+  const { isAdmin } = useAuthSub();
+  const agents = isAdmin ? mockAgents.map(a => ({ ...a, price: 0 })) : mockAgents;
     <div className="min-h-screen bg-background p-6">
       <SEO
         title="Browse Marketplace – Agents & Workflows"
@@ -52,7 +54,7 @@ const Marketplace = () => {
 
         <section>
           <div className="grid md:grid-cols-2 gap-4">
-            {mockAgents.map((a) => (
+            {agents.map((a) => (
               <AgentCard key={a.id} {...a} />
             ))}
           </div>
