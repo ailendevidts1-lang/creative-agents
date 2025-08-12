@@ -1,73 +1,32 @@
-# Welcome to your Lovable project
+# Creative Agents (Vite + React) Starter
 
-## Project info
+This project is a clean React + Tailwind starter that mirrors the requested routes and shared UI to help you bootstrap quickly in Lovable. Note: Lovable does not support Next.js directly, so this starter uses Vite + React Router.
 
-**URL**: https://lovable.dev/projects/55a36a98-e2ca-4aed-9529-93af8dd1474c
+## Development
+- npm i
+- npm run dev
+- App runs at http://localhost:3000
 
-## How can I edit this code?
+## Build
+- npm run build
+- npm run preview
 
-There are several ways of editing your application.
+## Routing
+Implemented routes with placeholder UIs:
+- /, /dashboard, /builder, /agents, /marketplace, /agents/:id, /runs/:id, /pricing, /settings, /admin
 
-**Use Lovable**
+## API Namespace
+Vite doesn’t provide server-side API routes. A placeholder is available at /api/health.json (served from public/). For serverless/API needs, use Supabase Edge Functions or deploy a backend.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/55a36a98-e2ca-4aed-9529-93af8dd1474c) and start prompting.
+## Shared UI
+Using shadcn-ui components already included: Button, Card, Badge, Table, Tabs, Toast. A Modal wrapper is provided at src/components/ui/modal.tsx (built on Dialog).
 
-Changes made via Lovable will be committed automatically to this repo.
+## ESLint & Prettier
+- ESLint is configured (see eslint.config.js)
+- Prettier is configured via .prettierrc and .prettierignore
 
-**Use your preferred IDE**
+## Environment Variables (.env.example)
+Included a .env.example for a Next.js stack reference. In Lovable there are no runtime .env files; prefer Supabase secrets or let users enter publishable keys client-side if absolutely needed.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/55a36a98-e2ca-4aed-9529-93af8dd1474c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Next.js Repository
+If you want a full Next.js (App Router) repo with Prisma/Postgres, Auth.js, Stripe, BullMQ (Redis), and S3 uploads, I can generate a GitHub-ready template and share instructions to clone locally. 
