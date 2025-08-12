@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthSub } from "@/context/AuthSubscriptionProvider";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Lock, LogIn, UserPlus, Crown } from "lucide-react";
 
 const Auth = () => {
-  const { user, login, signUp, logout, subscription, startCheckout, openCustomerPortal } = useAuthSub();
+  const { user, login, signUp, logout, subscription, startCheckout, openCustomerPortal, refreshSubscription } = useAuthSub();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,6 +28,12 @@ const Auth = () => {
     }
     await startCheckout(tier);
   };
+
+  useEffect(() => {
+    if (user) {
+      refreshSubscription();
+    }
+  }, [user, refreshSubscription]);
 
   return (
     <div className="min-h-screen bg-background p-6">
