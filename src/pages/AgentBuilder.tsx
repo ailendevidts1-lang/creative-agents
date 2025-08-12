@@ -139,8 +139,13 @@ export default function AgentBuilder() {
         body: { prompt },
       });
       if (error) throw error;
+      const warning = (data as any)?.warning;
       const spec = (data as any)?.spec;
-      if (!spec) throw new Error("No spec returned");
+      if (warning === "ai-fallback" || !spec) {
+        shToast({ title: "AI temporarily unavailable", description: "Using quick generator instead." });
+        localGenerateFromPrompt(prompt);
+        return;
+      }
       setAgent((a) => {
         const text = `${prompt} ${spec.description || ""}`.toLowerCase();
         const inferred = new Set<string>();
