@@ -265,12 +265,15 @@ const AgentBuilder = () => {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button className="btn-warm" onClick={() => saveAgent("draft")}>\n                  <Save className=\"w-4 h-4 mr-2\" />\n                  Save Draft\n                </Button>
+                <Button className="btn-warm" onClick={() => saveAgent("draft")}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Draft
+                </Button>
                 <Button variant="outline" className="btn-glass">
                   <PlayCircle className="w-4 h-4 mr-2" />
                   Test Agent
                 </Button>
-                <Button>
+                <Button onClick={() => saveAgent("published")}>
                   <Send className="w-4 h-4 mr-2" />
                   Publish Agent
                 </Button>
