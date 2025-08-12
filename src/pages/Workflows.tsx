@@ -2,7 +2,7 @@ import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -16,6 +16,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 // Simple node components
@@ -75,10 +76,14 @@ export default function Workflows() {
   const [tags, setTags] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [prompt, setPrompt] = useState<string>("");
-  const [apiKey, setApiKey] = useState<string>("");
+  
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const [advisorMessages, setAdvisorMessages] = useState<Array<{role: "assistant" | "user"; content: string}>>([]);
+  const [advisorLoading, setAdvisorLoading] = useState(false);
+  const [advisorInput, setAdvisorInput] = useState("");
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
 
@@ -125,8 +130,30 @@ export default function Workflows() {
   const generateFromPrompt = async () => {
     if (!prompt.trim()) return;
 
-    // Minimal local stub if no API key
-    if (!apiKey) {
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-workflow", {
+        body: { prompt },
+      });
+      if (error) throw new Error(error.message || "Failed to generate workflow");
+      const result = (data as any)?.workflow || data;
+
+      const base = 120;
+      const newNodes = (result.nodes || []).map((n: any, i: number) => ({
+        id: n.id || `${n.type || "agent"}-${Date.now()}-${i}`,
+        type: n.type || "agent",
+        position: n.position || { x: base + i * 180, y: base + i * 60 },
+        data: n.data || {},
+      }));
+      const newEdges = (result.edges || []).map((e: any, i: number) => ({
+        id: `e-${Date.now()}-${i}`,
+        source: e.source,
+        target: e.target,
+      }));
+
+      setNodes((nds) => nds.concat(newNodes));
+      setEdges((eds) => eds.concat(newEdges));
+      toast({ title: "AI plan added", description: "Generated nodes and links from your prompt." });
+    } catch (_) {
       const baseX = 200 + Math.random() * 100;
       const id1 = `agent-${Date.now()}`;
       const id2 = `agent-${Date.now() + 1}`;
@@ -140,43 +167,49 @@ export default function Workflows() {
         { id: `e-${Date.now()}-2`, source: id1, target: id2 },
         { id: `e-${Date.now()}-3`, source: id2, target: `alert-${Date.now() + 2}` },
       ));
-      toast({ title: "Draft created", description: "Generated a simple flow from your prompt." });
-      return;
-    }
-
-    try {
-      const res = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
-          messages: [
-            { role: 'system', content: 'Return a minimal JSON describing nodes and connections for an AI workflow. Keep it small.' },
-            { role: 'user', content: `Create a workflow: ${prompt}. Schema: { nodes:[{id,type,data}], edges:[{source,target}] }` },
-          ],
-          temperature: 0.2,
-          max_tokens: 600,
-        }),
-      });
-      const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-      if (!parsed) throw new Error('No JSON found');
-
-      const base = 120;
-      const newNodes = parsed.nodes?.map((n: any, i: number) => ({ id: n.id, type: n.type || 'agent', position: { x: base + i * 180, y: base + i * 60 }, data: n.data || {} })) || [];
-      const newEdges = parsed.edges?.map((e: any, i: number) => ({ id: `e-${Date.now()}-${i}`, source: e.source, target: e.target })) || [];
-      setNodes((nds) => nds.concat(newNodes));
-      setEdges((eds) => eds.concat(newEdges));
-      toast({ title: "AI plan added", description: "We generated nodes and links from your prompt." });
-    } catch (e) {
-      toast({ title: "AI failed", description: "Could not generate workflow. Using local stub instead." });
+      toast({ title: "AI failed", description: "Using local stub instead." });
     }
   };
+
+  const sendAdvisorPrompt = async () => {
+    if (!advisorInput.trim()) return;
+    const userMsg = advisorInput.trim();
+    setAdvisorInput("");
+    setAdvisorMessages((msgs) => [...msgs, { role: "user", content: userMsg }]);
+    try {
+      setAdvisorLoading(true);
+      const { data, error } = await supabase.functions.invoke("workflow-advisor", {
+        body: { nodes, edges, title, description, question: userMsg },
+      });
+      if (error) throw new Error(error.message || "Advisor failed");
+      const answer = (data as any)?.answer || (data as any)?.suggestion || (data as any)?.message || "";
+      if (answer) setAdvisorMessages((msgs) => [...msgs, { role: "assistant", content: answer }]);
+    } catch (e) {
+      toast({ title: "Advisor error", description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setAdvisorLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        if (nodes.length + edges.length < 2) return;
+        setAdvisorLoading(true);
+        const { data, error } = await supabase.functions.invoke("workflow-advisor", {
+          body: { nodes, edges, title, description },
+        });
+        if (error) throw new Error(error.message || "Advisor failed");
+        const suggestion = (data as any)?.suggestion || (data as any)?.message || "";
+        if (suggestion) setAdvisorMessages((msgs) => [...msgs, { role: "assistant", content: suggestion }]);
+      } catch (_) {
+        // ignore
+      } finally {
+        setAdvisorLoading(false);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [nodes, edges, title, description]);
 
   const nodeTypesMemo = useMemo(() => nodeTypes, []);
 
@@ -226,9 +259,30 @@ export default function Workflows() {
           <section className="card-premium space-y-2">
             <h2 className="text-lg font-semibold text-foreground">AI Builder</h2>
             <p className="text-xs text-muted-foreground">Describe your workflow and let AI draft it. For production, store your API key in Supabase Edge Function secrets.</p>
-            <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Perplexity API key (optional)" />
+            
             <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="e.g., Every hour: research topic, summarize, and email me the digest." className="w-full h-28 rounded-md border border-border/40 bg-background p-2 text-sm" />
             <Button onClick={generateFromPrompt} className="btn-premium">Generate from Prompt</Button>
+          </section>
+
+          <section className="card-premium space-y-2">
+            <h2 className="text-lg font-semibold text-foreground">Workflow Advisor</h2>
+            <div className="h-36 overflow-auto rounded-md border border-border/40 p-2 bg-background text-sm">
+              {advisorMessages.length === 0 ? (
+                <p className="text-muted-foreground text-xs">Suggestions will appear as you build your flow.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {advisorMessages.slice(-6).map((m, i) => (
+                    <li key={i} className={m.role === 'assistant' ? 'text-foreground' : 'text-muted-foreground'}>
+                      <span className="font-medium">{m.role === 'assistant' ? 'Advisor: ' : 'You: '}</span>{m.content}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input value={advisorInput} onChange={(e) => setAdvisorInput(e.target.value)} placeholder="Ask how to improve this workflow…" />
+              <Button className="btn-warm" onClick={sendAdvisorPrompt} disabled={advisorLoading}>{advisorLoading ? '...' : 'Ask'}</Button>
+            </div>
           </section>
 
           <section className="card-premium">
