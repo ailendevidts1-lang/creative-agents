@@ -15,6 +15,7 @@ interface AuthContextValue {
   session: Session | null;
   isAdmin: boolean;
   subscription: SubscriptionState;
+  subscriptionLoading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
@@ -35,15 +36,21 @@ export const AuthSubscriptionProvider = ({ children }: { children: ReactNode }) 
     subscription_tier: "Free",
     subscription_end: null,
   });
+  const [subscriptionLoading, setSubscriptionLoading] = useState<boolean>(false);
 
   const isAdmin = useMemo(() => !!user && user.email?.toLowerCase() === ADMIN_EMAIL, [user]);
 
   const refreshSubscription = async () => {
+    setSubscriptionLoading(true);
     try {
-      if (!session?.access_token) return;
+      if (!session?.access_token) {
+        setSubscriptionLoading(false);
+        return;
+      }
       // Admin bypass
       if (isAdmin) {
         setSubscription({ subscribed: true, subscription_tier: "Enterprise", subscription_end: null });
+        setSubscriptionLoading(false);
         return;
       }
       const { data, error } = await supabase.functions.invoke("check-subscription", {
@@ -57,6 +64,8 @@ export const AuthSubscriptionProvider = ({ children }: { children: ReactNode }) 
       });
     } catch (e) {
       console.error("Failed to refresh subscription:", e);
+    } finally {
+      setSubscriptionLoading(false);
     }
   };
 
@@ -140,6 +149,7 @@ export const AuthSubscriptionProvider = ({ children }: { children: ReactNode }) 
     session,
     isAdmin,
     subscription,
+    subscriptionLoading,
     login,
     signUp,
     logout,
