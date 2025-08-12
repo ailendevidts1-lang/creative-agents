@@ -1,29 +1,48 @@
 import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import NavBar from "@/components/NavBar";
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import Builder from "@/pages/Builder";
+import Agents from "@/pages/Agents";
+import Marketplace from "@/pages/Marketplace";
+import AgentDetail from "@/pages/AgentDetail";
+import RunDetail from "@/pages/RunDetail";
+import Pricing from "@/pages/Pricing";
+import Settings from "@/pages/Settings";
+import Admin from "@/pages/Admin";
+import Health from "@/pages/Health";
+import NotFound from "@/pages/NotFound";
 
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-5xl mx-auto p-4">
-          <a href="/" className="text-xl font-semibold" aria-label="Home">
-            New App Starter
-          </a>
-        </div>
-      </header>
-      <main className="max-w-5xl mx-auto p-6 flex-1">
-        <section className="space-y-3">
-          <h1 className="text-2xl font-bold">Welcome</h1>
-          <p className="text-muted-foreground">
-            Project reset complete. This is a clean React + Tailwind shell. Add your components and pages next.
-          </p>
-        </section>
-      </main>
-      <footer className="border-t border-border/40">
-        <div className="max-w-5xl mx-auto p-4 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Your App
-        </div>
-      </footer>
-    </div>
+    <BrowserRouter>
+      <div className="theme-luxury min-h-screen bg-background text-foreground flex flex-col">
+        <NavBar />
+        <main className="container mx-auto flex-1 p-6 animate-fade-in">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/builder" element={<Builder />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/agents/:id" element={<AgentDetail />} />
+            <Route path="/runs/:id" element={<RunDetail />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/health" element={<Health />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <footer className="border-t border-border/40 bg-secondary/30 backdrop-blur supports-[backdrop-filter]:bg-secondary/30">
+          <div className="container mx-auto p-6 text-sm text-muted-foreground flex items-center justify-between">
+            <span>© {new Date().getFullYear()} Creative Agents</span>
+            <a href="/health" className="story-link">Health</a>
+          </div>
+        </footer>
+      </div>
+    </BrowserRouter>
   );
 };
 

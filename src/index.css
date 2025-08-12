@@ -238,3 +238,77 @@
     animation: glow-pulse 3s ease-in-out infinite;
   }
 }
+
+@layer base {
+  /* Luxury theme overrides: deep charcoal + royal blue, gold, emerald */
+  .theme-luxury {
+    --background: 220 20% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 15% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 15% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Royal blue primary */
+    --primary: 225 85% 60%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 225 85% 66%;
+
+    /* Surfaces */
+    --secondary: 220 14% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 220 14% 16%;
+    --muted-foreground: 215 20% 70%;
+
+    /* Gold accent */
+    --accent: 45 95% 55%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Emerald success */
+    --success: 145 55% 40%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 40 95% 55%;
+    --warning-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 14% 22%;
+    --input: 220 14% 20%;
+    --ring: 225 85% 60%;
+
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(225 85% 60%), hsl(45 95% 55%));
+    --gradient-warm: linear-gradient(135deg, hsl(45 95% 55%), hsl(145 55% 40%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 20% 6%), hsl(220 15% 8%));
+    --gradient-glow: linear-gradient(135deg, hsl(225 85% 60% / 0.12), hsl(45 95% 55% / 0.16));
+
+    /* Shadows */
+    --shadow-premium: 0 20px 40px -12px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 40px hsl(45 95% 55% / 0.35);
+    --shadow-warm: 0 12px 30px -10px hsl(45 95% 55% / 0.25);
+
+    --radius: 1rem;
+  }
+}
+
+@layer utilities {
+  /* Underline animation for nav links */
+  .story-link { position: relative; display: inline-block; }
+  .story-link::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: -2px; height: 2px; width: 100%;
+    background-color: hsl(var(--accent));
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease;
+  }
+  .story-link:hover::after { transform: scaleX(1); transform-origin: bottom left; }
+
+  .hover-scale { @apply transition-transform duration-200 hover:scale-105; }
+}
