@@ -1,3 +1,4 @@
+
 import SEO from "@/components/SEO";
 import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/button";
@@ -15,11 +16,19 @@ const mockAgents = [
 const mockWorkflows = [
   { id: "w1", name: "Weekly Research Digest", description: "Timer → Research Agent → Summarizer → Email Alert", category: "Workflow", rating: 4.8, runs: 1240, price: 15, avatar: "🧩" },
   { id: "w2", name: "Lead Nurturing Bundle", description: "Webhook → Qualify → Email Campaign", category: "Workflow", rating: 4.6, runs: 980, price: 19, avatar: "🧩" },
+  { id: "w3", name: "Enterprise Analytics Suite", description: "Data Pipeline → AI Analysis → Dashboard Reports", category: "Workflow", rating: 4.9, runs: 650, price: 25, avatar: "📊" },
+  { id: "w4", name: "Customer Support Automation", description: "Ticket Analysis → Response Generation → Follow-up", category: "Workflow", rating: 4.7, runs: 820, price: 22, avatar: "🎧" },
 ];
 
 const Marketplace = () => {
-  const { isAdmin } = useAuthSub();
+  const { isAdmin, subscription } = useAuthSub();
+  const isEnterprise = subscription.subscription_tier === "Enterprise";
+  
+  // Admin gets everything free, Enterprise gets access to all workflows
   const agents = isAdmin ? mockAgents.map(a => ({ ...a, price: 0 })) : mockAgents;
+  const workflows = isAdmin ? mockWorkflows.map(w => ({ ...w, price: 0 })) : mockWorkflows;
+  const showWorkflows = isAdmin || isEnterprise || subscription.subscription_tier === "Premium";
+
   return (
     <div className="min-h-screen bg-background p-6">
       <SEO
@@ -31,6 +40,11 @@ const Marketplace = () => {
       <header className="max-w-7xl mx-auto mb-6">
         <h1 className="text-3xl font-bold text-foreground">Browse Marketplace</h1>
         <p className="text-muted-foreground mt-1">Search, filter, and find the right agent for your workflow.</p>
+        {isEnterprise && (
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-medium">
+            ✨ Enterprise - All workflows unlocked
+          </div>
+        )}
       </header>
 
       <main className="max-w-7xl mx-auto space-y-6">
@@ -48,7 +62,7 @@ const Marketplace = () => {
               <Button variant="outline" className="btn-glass">Marketing</Button>
               <Button variant="outline" className="btn-glass">Sales</Button>
               <Button variant="outline" className="btn-glass">Legal</Button>
-              <Button variant="outline" className="btn-glass">Workflows</Button>
+              {showWorkflows && <Button variant="outline" className="btn-glass">Workflows</Button>}
             </div>
           </div>
         </section>
@@ -61,16 +75,33 @@ const Marketplace = () => {
           </div>
         </section>
 
-        <section>
-          <header className="flex items-center justify-between mb-3 mt-6">
-            <h2 className="text-xl font-semibold text-foreground">Workflow Bundles</h2>
-          </header>
-          <div className="grid md:grid-cols-2 gap-4">
-            {mockWorkflows.map((w) => (
-              <AgentCard key={w.id} {...w} />
-            ))}
-          </div>
-        </section>
+        {showWorkflows && (
+          <section>
+            <header className="flex items-center justify-between mb-3 mt-6">
+              <h2 className="text-xl font-semibold text-foreground">Workflow Bundles</h2>
+              {isEnterprise && (
+                <span className="text-sm text-accent">Premium & Enterprise exclusive</span>
+              )}
+            </header>
+            <div className="grid md:grid-cols-2 gap-4">
+              {workflows.map((w) => (
+                <AgentCard key={w.id} {...w} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!showWorkflows && (
+          <section className="card-premium text-center py-8">
+            <h2 className="text-xl font-semibold text-foreground mb-2">Unlock Workflow Bundles</h2>
+            <p className="text-muted-foreground mb-4">
+              Access powerful workflow combinations with Premium or Enterprise plans
+            </p>
+            <Button className="btn-warm" asChild>
+              <a href="/auth">Upgrade Now</a>
+            </Button>
+          </section>
+        )}
       </main>
     </div>
   );

@@ -1,10 +1,16 @@
+
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Settings2, PlayCircle, Save, Send, BookTemplate } from "lucide-react";
+import { Upload, Settings2, PlayCircle, Save, Send, BookTemplate, Crown } from "lucide-react";
+import { useAuthSub } from "@/context/AuthSubscriptionProvider";
 
 const AgentBuilder = () => {
+  const { isAdmin, subscription } = useAuthSub();
+  const isEnterprise = subscription.subscription_tier === "Enterprise";
+  const isPremiumOrEnterprise = subscription.subscription_tier === "Premium" || isEnterprise;
+
   return (
     <div className="min-h-screen bg-background p-6">
       <SEO
@@ -16,6 +22,12 @@ const AgentBuilder = () => {
       <header className="max-w-7xl mx-auto mb-6">
         <h1 className="text-3xl font-bold text-foreground">Agent Builder – Create New AI Agent</h1>
         <p className="text-muted-foreground mt-1">Pick a template, set behavior, add knowledge, connect integrations, then test and publish.</p>
+        {isEnterprise && (
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-medium">
+            <Crown className="w-4 h-4 mr-1" />
+            Enterprise - All features unlocked
+          </div>
+        )}
       </header>
 
       <main className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6">
@@ -34,6 +46,18 @@ const AgentBuilder = () => {
               <Button variant="outline" className="btn-glass">Email Rewriter</Button>
               <Button variant="outline" className="btn-glass">Lead Generator</Button>
               <Button variant="outline" className="btn-glass">Contract Analyzer</Button>
+              {isEnterprise && (
+                <>
+                  <Button variant="outline" className="btn-glass">
+                    <Crown className="w-4 h-4 mr-1" />
+                    Enterprise Analytics
+                  </Button>
+                  <Button variant="outline" className="btn-glass">
+                    <Crown className="w-4 h-4 mr-1" />
+                    Custom Workflow
+                  </Button>
+                </>
+              )}
             </div>
           </article>
 
@@ -57,6 +81,15 @@ const AgentBuilder = () => {
                 <label className="text-sm text-muted-foreground">Tags</label>
                 <Input placeholder="e.g., market, competitor, trending" />
               </div>
+              {isEnterprise && (
+                <div className="md:col-span-2">
+                  <label className="text-sm text-muted-foreground">
+                    <Crown className="w-4 h-4 inline mr-1" />
+                    Enterprise Tier (for marketplace publishing)
+                  </label>
+                  <Input placeholder="e.g., Enterprise Analytics, Custom Solutions" />
+                </div>
+              )}
             </div>
             <div className="pt-2">
               <Button variant="outline" className="btn-glass">
@@ -85,6 +118,15 @@ const AgentBuilder = () => {
                 <label className="text-sm text-muted-foreground">Knowledge base (docs, CSVs, URLs)</label>
                 <Textarea placeholder="Paste URLs or describe sources. (Upload coming soon)" rows={3} />
               </div>
+              {isEnterprise && (
+                <div className="md:col-span-2">
+                  <label className="text-sm text-muted-foreground">
+                    <Crown className="w-4 h-4 inline mr-1" />
+                    Local Execution Settings (Enterprise)
+                  </label>
+                  <Textarea placeholder="Configure local agent execution parameters..." rows={2} />
+                </div>
+              )}
             </div>
           </article>
         </section>
@@ -94,13 +136,31 @@ const AgentBuilder = () => {
           <article className="card-premium">
             <h2 className="text-lg font-semibold text-foreground mb-3">Integrations</h2>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <div>Connect Gmail, Slack, CRM, databases (coming soon)</div>
+              <div>Connect Gmail, Slack, CRM, databases</div>
               <div>Webhooks and API access</div>
+              {isEnterprise && (
+                <div className="text-accent font-medium">
+                  <Crown className="w-3 h-3 inline mr-1" />
+                  Enterprise: Advanced integrations available
+                </div>
+              )}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="outline" className="btn-glass">Connect Gmail</Button>
               <Button variant="outline" className="btn-glass">Connect Slack</Button>
               <Button variant="outline" className="btn-glass">Connect CRM</Button>
+              {isEnterprise && (
+                <>
+                  <Button variant="outline" className="btn-glass">
+                    <Crown className="w-3 h-3 mr-1" />
+                    Enterprise DB
+                  </Button>
+                  <Button variant="outline" className="btn-glass">
+                    <Crown className="w-3 h-3 mr-1" />
+                    Custom API
+                  </Button>
+                </>
+              )}
             </div>
           </article>
 
@@ -110,6 +170,12 @@ const AgentBuilder = () => {
               <div className="rounded-lg border border-border/30 p-3 bg-card/50">
                 <div className="text-sm text-muted-foreground">Sandbox preview</div>
                 <div className="text-xs text-muted-foreground">Run a test task to validate behavior.</div>
+                {isEnterprise && (
+                  <div className="text-xs text-accent mt-1">
+                    <Crown className="w-3 h-3 inline mr-1" />
+                    Local execution available
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button className="btn-warm">
@@ -124,6 +190,12 @@ const AgentBuilder = () => {
                   <Send className="w-4 h-4 mr-2" />
                   Publish Agent
                 </Button>
+                {isEnterprise && (
+                  <Button variant="outline" className="btn-glass">
+                    <Crown className="w-4 h-4 mr-2" />
+                    Deploy Local
+                  </Button>
+                )}
               </div>
             </div>
           </article>
