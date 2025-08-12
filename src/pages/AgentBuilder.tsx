@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Save, Play, Upload, Globe2, Webhook, Clock8, Wand2, Send, Trash2, CircleSlash2, CheckCircle2, Image as ImageIcon, FileText, Search } from "lucide-react";
 import { getAgents, saveAgent, deleteAgentById, type AgentModel, type RunModel, saveRun } from "@/utils/agents";
 import { createListing, updateListing, unpublishListing, checkLicense } from "@/utils/marketplaceApi";
+import GeneratedToolApp from "@/components/GeneratedToolApp";
 
 const TOOL_OPTIONS = [
   { key: "email", label: "Email", icon: Send },
@@ -140,16 +141,27 @@ export default function AgentBuilder() {
       if (error) throw error;
       const spec = (data as any)?.spec;
       if (!spec) throw new Error("No spec returned");
-      setAgent((a) => ({
-        ...a,
-        name: spec.name || a.name,
-        description: spec.description || a.description,
-        category: spec.category || a.category,
-        tags: Array.isArray(spec.tags) ? spec.tags : a.tags,
-        systemPrompt: a.systemPrompt || `You are ${spec.name}. ${spec.personality || "Be helpful and concise."}`,
-        instructions: a.instructions || `Primary goal: ${spec.description}\n\nSteps:\n1) Understand the task\n2) Gather required context\n3) Execute using available tools\n4) Return a clear result`,
-        updatedAt: new Date().toISOString(),
-      }));
+      setAgent((a) => {
+        const text = `${prompt} ${spec.description || ""}`.toLowerCase();
+        const inferred = new Set<string>();
+        if (/(scrap|crawl|website|url)/i.test(text)) inferred.add("web_scraper");
+        if (/(search|google|web search|lookup)/i.test(text)) inferred.add("web_search");
+        if (/(doc|pdf|report|analy|summar)/i.test(text)) inferred.add("documents");
+        if (/(image|photo|background|edit|design)/i.test(text)) inferred.add("image_edit");
+        if (/(email|gmail|inbox)/i.test(text)) inferred.add("email");
+        if (/(sheet|csv|excel)/i.test(text)) inferred.add("sheets");
+        return ({
+          ...a,
+          name: spec.name || a.name,
+          description: spec.description || a.description,
+          category: spec.category || a.category,
+          tags: Array.isArray(spec.tags) ? spec.tags : a.tags,
+          systemPrompt: a.systemPrompt || `You are ${spec.name}. ${spec.personality || "Be helpful and concise."}`,
+          instructions: a.instructions || `Primary goal: ${spec.description}\n\nSteps:\n1) Understand the task\n2) Gather required context\n3) Execute using available tools\n4) Return a clear result`,
+          tools: Array.from(new Set([...(a.tools || []), ...Array.from(inferred)])),
+          updatedAt: new Date().toISOString(),
+        });
+      });
       shToast({ title: "AI draft generated." });
     } catch (e: any) {
       toast.error(e?.message || "Generate failed");
@@ -410,6 +422,10 @@ export default function AgentBuilder() {
               </div>
             </section>
 
+            {/* Mini App */}
+            <GeneratedToolApp agent={agent} />
+
+            {/* Test Output */}
             <section className="card-premium p-4 space-y-3">
               <h2 className="text-lg font-semibold text-foreground">Test Output</h2>
               <div className="flex items-center gap-2">
