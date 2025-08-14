@@ -10,13 +10,15 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectDetails } from "@/components/ProjectDetails";
 import VoiceInterface from "@/components/VoiceInterface";
 import SystemShowcase from "@/components/SystemShowcase";
+import { Settings } from "@/pages/Settings";
 import { ProjectPlan } from "@/agents/types";
-import { Zap, Cpu, Smartphone, Globe, Bot, Wrench, Shield, Eye, CheckCircle } from "lucide-react";
+import { Zap, Cpu, Smartphone, Globe, Bot, Wrench, Shield, Eye, CheckCircle, Settings as SettingsIcon } from "lucide-react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectPlan | null>(null);
   const [showVoiceInterface, setShowVoiceInterface] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { session, projects, isGenerating, generateProject, generateCode, deleteProject } = useProjectGeneration();
 
   const projectTypes = [
@@ -76,6 +78,14 @@ export default function Home() {
     return currentStep >= 0 ? ((currentStep + 1) / pipeline.length) * 100 : 0;
   };
 
+  if (showSettings) {
+    return (
+      <div className="container mx-auto p-6">
+        <Settings onBack={() => setShowSettings(false)} />
+      </div>
+    );
+  }
+
   if (selectedProject) {
     return (
       <div className="container mx-auto p-6">
@@ -91,13 +101,18 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="container mx-auto p-6 space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Your Private AI Development System
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Turn natural language into production-ready software. Apps, OS, AI Assistants, Websites, Automation Tools — Fully Automatic Pipeline.
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="text-center space-y-4 flex-1">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Your Private AI Development System
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Turn natural language into production-ready software. Apps, OS, AI Assistants, Websites, Automation Tools — Fully Automatic Pipeline.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)} className="self-start">
+            <SettingsIcon className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Project Types */}

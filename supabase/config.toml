@@ -17,3 +17,15 @@ verify_jwt = false
 
 [functions.deploy-project]
 verify_jwt = false
+
+[functions.run-sandbox]
+verify_jwt = false
+
+[functions.autofix-code]
+verify_jwt = false
+
+[functions.edit-project]
+verify_jwt = false
+
+[functions.manage-secrets]
+verify_jwt = false

@@ -15,8 +15,10 @@ import {
   Clock, 
   Target,
   Rocket,
-  Bot
+  Bot,
+  Play
 } from 'lucide-react';
+import { SandboxEnvironment } from '@/components/SandboxEnvironment';
 
 interface ProjectDetailsProps {
   project: ProjectPlan;
@@ -26,6 +28,7 @@ interface ProjectDetailsProps {
 export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack }) => {
   const { deployProject, generateCode, isDeploying, projects } = useProjectGeneration();
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [showSandbox, setShowSandbox] = useState(false);
   
   // Get the latest project state from the hook
   const currentProject = projects.find(p => p.id === project.id) || project;
@@ -420,10 +423,9 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
         </Card>
       )}
 
-      <div className="flex gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Button 
           onClick={handleGenerateCode} 
-          className="flex-1"
           disabled={isGeneratingCode}
         >
           <Code className="h-4 w-4 mr-2" />
@@ -431,14 +433,28 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
         </Button>
         <Button 
           variant="outline" 
-          className="flex-1" 
           onClick={handleDeploy}
           disabled={isDeploying}
         >
           <Rocket className="h-4 w-4 mr-2" />
           {isDeploying ? 'Deploying...' : currentProject.metadata?.deploymentUrl ? 'Redeploy' : 'Deploy Project'}
         </Button>
+        <Button 
+          variant="secondary" 
+          onClick={() => setShowSandbox(true)}
+          disabled={!currentProject.metadata?.codeGenerated}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          Test in Sandbox
+        </Button>
       </div>
+
+      {showSandbox && (
+        <SandboxEnvironment 
+          project={currentProject} 
+          onClose={() => setShowSandbox(false)} 
+        />
+      )}
     </div>
   );
 };
