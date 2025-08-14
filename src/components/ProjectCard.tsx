@@ -9,9 +9,10 @@ interface ProjectCardProps {
   project: ProjectPlan;
   onView: (project: ProjectPlan) => void;
   onDelete: (id: string) => void;
+  onGenerateCode?: (project: ProjectPlan) => void;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDelete }) => {
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDelete, onGenerateCode }) => {
   const getProjectTypeIcon = (type: string) => {
     switch (type) {
       case 'web-app': return '🌐';
@@ -101,7 +102,11 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDel
             <ExternalLink className="h-4 w-4 mr-2" />
             View Details
           </Button>
-          <Button variant="outline" className="flex-1">
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => onGenerateCode?.(project)}
+          >
             <Code className="h-4 w-4 mr-2" />
             {project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
           </Button>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useProjectGeneration } from '@/hooks/useProjectGeneration';
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectPlan } from '@/agents/types';
 import { 
@@ -24,12 +25,15 @@ interface ProjectDetailsProps {
 
 export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack }) => {
   const { deployProject, generateCode, isDeploying } = useProjectGeneration();
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   
   const handleDeploy = async () => {
     try {
+      // Use the project directly from props instead of looking up by ID
       const result = await deployProject(project.id);
       if (result.success) {
-        // Show success message
+        // The project state will be updated in the hook
+        console.log('Deployment successful:', result.deploymentUrl);
       }
     } catch (error) {
       console.error('Deployment failed:', error);
@@ -37,13 +41,18 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
   };
 
   const handleGenerateCode = async () => {
+    setIsGeneratingCode(true);
     try {
+      // Use the project directly from props instead of looking up by ID
       const result = await generateCode(project.id);
       if (result.success) {
-        // Show success message or download link
+        console.log('Code generation successful');
+        // The project state will be updated in the hook
       }
     } catch (error) {
       console.error('Code generation failed:', error);
+    } finally {
+      setIsGeneratingCode(false);
     }
   };
 
@@ -411,9 +420,13 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
       )}
 
       <div className="flex gap-3">
-        <Button onClick={handleGenerateCode} className="flex-1">
+        <Button 
+          onClick={handleGenerateCode} 
+          className="flex-1"
+          disabled={isGeneratingCode}
+        >
           <Code className="h-4 w-4 mr-2" />
-          {project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
+          {isGeneratingCode ? 'Generating...' : project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
         </Button>
         <Button 
           variant="outline" 

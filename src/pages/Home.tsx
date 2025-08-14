@@ -17,7 +17,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectPlan | null>(null);
   const [showVoiceInterface, setShowVoiceInterface] = useState(false);
-  const { session, projects, isGenerating, generateProject, deleteProject } = useProjectGeneration();
+  const { session, projects, isGenerating, generateProject, generateCode, deleteProject } = useProjectGeneration();
 
   const projectTypes = [
     { icon: Globe, name: "Web Apps", desc: "SaaS dashboards, e-commerce, social networks" },
@@ -45,6 +45,14 @@ export default function Home() {
       setPrompt("");
     } catch (error) {
       console.error("Generation failed:", error);
+    }
+  };
+
+  const handleGenerateCode = async (project: ProjectPlan) => {
+    try {
+      await generateCode(project.id);
+    } catch (error) {
+      console.error("Code generation failed:", error);
     }
   };
 
@@ -281,6 +289,7 @@ export default function Home() {
                     project={project}
                     onView={setSelectedProject}
                     onDelete={deleteProject}
+                    onGenerateCode={handleGenerateCode}
                   />
                 ))}
               </div>
