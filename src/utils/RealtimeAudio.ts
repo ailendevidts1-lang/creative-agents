@@ -78,7 +78,15 @@ export class RealtimeChat {
       this.pc.ontrack = e => this.audioEl.srcObject = e.streams[0];
 
       // Add local audio track
-      const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ms = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
       this.pc.addTrack(ms.getTracks()[0]);
 
       // Set up data channel
@@ -87,6 +95,12 @@ export class RealtimeChat {
         const event = JSON.parse(e.data);
         console.log("Received event:", event);
         this.onMessage(event);
+        
+        // Handle session created event
+        if (event.type === 'session.created') {
+          console.log('Session created, sending session update...');
+          this.sendSessionUpdate();
+        }
       });
 
       // Create and set local description
@@ -132,6 +146,48 @@ export class RealtimeChat {
       console.error("Error initializing chat:", error);
       throw error;
     }
+  }
+
+  private sendSessionUpdate() {
+    if (!this.dc || this.dc.readyState !== 'open') {
+      console.log('Data channel not ready for session update');
+      return;
+    }
+
+    const sessionUpdate = {
+      type: 'session.update',
+      session: {
+        modalities: ['text', 'audio'],
+        instructions: `You are an AI development assistant integrated into a private AI development system. 
+        
+        Your role:
+        - Help users understand their generated projects
+        - Provide guidance on implementation and deployment
+        - Answer questions about the codebase and architecture
+        - Suggest improvements and best practices
+        - Assist with debugging and troubleshooting
+        
+        Keep responses concise and practical. Focus on actionable advice.
+        When discussing code, be specific about files, functions, and implementation details.`,
+        voice: 'alloy',
+        input_audio_format: 'pcm16',
+        output_audio_format: 'pcm16',
+        input_audio_transcription: {
+          model: 'whisper-1'
+        },
+        turn_detection: {
+          type: 'server_vad',
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 1000
+        },
+        temperature: 0.8,
+        max_response_output_tokens: 'inf'
+      }
+    };
+
+    console.log('Sending session update:', sessionUpdate);
+    this.dc.send(JSON.stringify(sessionUpdate));
   }
 
   private encodeAudioData(float32Array: Float32Array): string {

@@ -16,7 +16,8 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [messages, setMessages] = useState<Array<{type: string, content: string, timestamp: Date}>>([]);
+  const [currentUserTranscript, setCurrentUserTranscript] = useState('');
+  const [messages, setMessages] = useState<Array<{type: string, content: string, timestamp: Date, isPartial?: boolean}>>([]);
   const chatRef = useRef<RealtimeChat | null>(null);
 
   const handleMessage = (event: any) => {
@@ -29,12 +30,30 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
     } else if (event.type === 'response.audio.done') {
       setIsSpeaking(false);
       onSpeakingChange?.(false);
+    } else if (event.type === 'input_audio_buffer.speech_started') {
+      console.log('User started speaking');
+      setCurrentUserTranscript('');
+    } else if (event.type === 'input_audio_buffer.speech_stopped') {
+      console.log('User stopped speaking');
+    } else if (event.type === 'conversation.item.input_audio_transcription.delta') {
+      // Real-time user transcription updates
+      if (event.delta) {
+        setCurrentUserTranscript(prev => prev + event.delta);
+      }
+    } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
+      // User speech transcription completed
+      console.log('User transcription completed:', event.transcript);
+      setMessages(prev => [...prev, {
+        type: 'user',
+        content: event.transcript,
+        timestamp: new Date()
+      }]);
+      setCurrentUserTranscript('');
     } else if (event.type === 'response.audio_transcript.delta') {
-      // Handle AI speech transcription
+      // Handle AI speech transcription (partial)
       setMessages(prev => {
         const lastMessage = prev[prev.length - 1];
-        if (lastMessage && lastMessage.type === 'ai' && 
-            Date.now() - lastMessage.timestamp.getTime() < 2000) {
+        if (lastMessage && lastMessage.type === 'ai' && lastMessage.isPartial) {
           // Update the last AI message
           return prev.map((msg, index) => 
             index === prev.length - 1 
@@ -46,17 +65,14 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
           return [...prev, {
             type: 'ai',
             content: event.delta,
-            timestamp: new Date()
+            timestamp: new Date(),
+            isPartial: true
           }];
         }
       });
-    } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
-      // Handle user speech transcription
-      setMessages(prev => [...prev, {
-        type: 'user',
-        content: event.transcript,
-        timestamp: new Date()
-      }]);
+    } else if (event.type === 'response.audio_transcript.done') {
+      // AI transcription completed
+      setMessages(prev => prev.map(msg => ({ ...msg, isPartial: false })));
     }
   };
 
@@ -89,15 +105,15 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
       
       toast({
         title: "🎤 Voice Assistant Connected",
-        description: "You can now speak with your AI development assistant",
+        description: "Start speaking! I'll show what you're saying and respond.",
       });
 
-      // Send initial greeting
-      setTimeout(() => {
-        if (chatRef.current) {
-          chatRef.current.sendMessage("Hello! I'm your AI development assistant. How can I help you with your projects today?");
-        }
-      }, 1000);
+      // Add welcome message
+      setMessages([{
+        type: 'ai',
+        content: "Hello! I'm your AI development assistant. I can see what you're saying and will respond to help with your projects. What would you like to discuss?",
+        timestamp: new Date()
+      }]);
 
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -116,6 +132,8 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
     chatRef.current?.disconnect();
     setIsConnected(false);
     setIsSpeaking(false);
+    setCurrentUserTranscript('');
+    setMessages([]);
     onSpeakingChange?.(false);
     
     toast({
@@ -145,7 +163,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Messages */}
-        {messages.length > 0 && (
+        {(messages.length > 0 || currentUserTranscript) && (
           <div className="max-h-60 overflow-y-auto space-y-2 p-3 bg-secondary/20 rounded-lg">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -159,11 +177,27 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
                     <span className="text-xs opacity-70">
                       {message.type === 'user' ? 'You' : 'AI Assistant'}
                     </span>
+                    {message.isPartial && (
+                      <span className="text-xs opacity-50">(speaking...)</span>
+                    )}
                   </div>
                   {message.content}
                 </div>
               </div>
             ))}
+            
+            {/* Real-time user transcript */}
+            {currentUserTranscript && (
+              <div className="flex justify-end">
+                <div className="max-w-[80%] p-2 rounded-lg text-sm bg-primary/70 text-primary-foreground">
+                  <div className="flex items-center gap-1 mb-1">
+                    <MessageSquare className="h-3 w-3" />
+                    <span className="text-xs opacity-70">You (speaking...)</span>
+                  </div>
+                  {currentUserTranscript}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -205,7 +239,9 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
               </div>
               
               <p className="text-center text-sm text-muted-foreground">
-                {isSpeaking ? "AI is speaking..." : "Listening... speak naturally"}
+                {isSpeaking ? "🔊 AI is speaking..." : 
+                 currentUserTranscript ? "🎙️ Transcribing your speech..." : 
+                 "🎙️ Listening... speak naturally"}
               </p>
               
               <Button 
