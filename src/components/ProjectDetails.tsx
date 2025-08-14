@@ -24,15 +24,17 @@ interface ProjectDetailsProps {
 }
 
 export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack }) => {
-  const { deployProject, generateCode, isDeploying } = useProjectGeneration();
+  const { deployProject, generateCode, isDeploying, projects } = useProjectGeneration();
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  
+  // Get the latest project state from the hook
+  const currentProject = projects.find(p => p.id === project.id) || project;
   
   const handleDeploy = async () => {
     try {
-      // Use the project directly from props instead of looking up by ID
-      const result = await deployProject(project.id);
+      console.log('Starting deployment for project:', currentProject.id);
+      const result = await deployProject(currentProject.id);
       if (result.success) {
-        // The project state will be updated in the hook
         console.log('Deployment successful:', result.deploymentUrl);
       }
     } catch (error) {
@@ -43,11 +45,10 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
   const handleGenerateCode = async () => {
     setIsGeneratingCode(true);
     try {
-      // Use the project directly from props instead of looking up by ID
-      const result = await generateCode(project.id);
+      console.log('Starting code generation for project:', currentProject.id);
+      const result = await generateCode(currentProject.id);
       if (result.success) {
         console.log('Code generation successful');
-        // The project state will be updated in the hook
       }
     } catch (error) {
       console.error('Code generation failed:', error);
@@ -64,9 +65,9 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
           Back to Projects
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">{project.name}</h1>
+          <h1 className="text-3xl font-bold">{currentProject.name}</h1>
           <Badge variant="outline" className="mt-1">
-            {project.requirements.type.replace('-', ' ')}
+            {currentProject.requirements.type.replace('-', ' ')}
           </Badge>
         </div>
       </div>
@@ -426,7 +427,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
           disabled={isGeneratingCode}
         >
           <Code className="h-4 w-4 mr-2" />
-          {isGeneratingCode ? 'Generating...' : project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
+          {isGeneratingCode ? 'Generating...' : currentProject.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
         </Button>
         <Button 
           variant="outline" 
@@ -435,7 +436,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
           disabled={isDeploying}
         >
           <Rocket className="h-4 w-4 mr-2" />
-          {isDeploying ? 'Deploying...' : project.metadata?.deploymentUrl ? 'Redeploy' : 'Deploy Project'}
+          {isDeploying ? 'Deploying...' : currentProject.metadata?.deploymentUrl ? 'Redeploy' : 'Deploy Project'}
         </Button>
       </div>
     </div>

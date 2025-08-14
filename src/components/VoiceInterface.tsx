@@ -63,11 +63,22 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
   const startConversation = async () => {
     setIsLoading(true);
     try {
+      // Check for microphone permission first
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (micError) {
+        throw new Error('Microphone access is required for voice chat. Please allow microphone access and try again.');
+      }
+
       // Get ephemeral token from our edge function
       const tokenResult = await AICodeService.createRealtimeToken();
       
-      if (!tokenResult.success || !tokenResult.token?.client_secret?.value) {
-        throw new Error(tokenResult.error || 'Failed to get ephemeral token');
+      if (!tokenResult.success) {
+        throw new Error(tokenResult.error || 'Failed to get OpenAI token. Please check your API key configuration.');
+      }
+
+      if (!tokenResult.token?.client_secret?.value) {
+        throw new Error('Invalid token format received from server');
       }
 
       const ephemeralToken = tokenResult.token.client_secret.value;
@@ -90,9 +101,10 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
 
     } catch (error) {
       console.error('Error starting conversation:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start voice conversation';
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : 'Failed to start voice conversation',
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

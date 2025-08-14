@@ -34,7 +34,11 @@ export const useProjectGeneration = () => {
 
   const deployProject = useCallback(async (projectId: string, deploymentTarget?: string) => {
     const project = projects.find(p => p.id === projectId);
-    if (!project) throw new Error('Project not found');
+    if (!project) {
+      console.error('Project not found with ID:', projectId);
+      console.log('Available projects:', projects.map(p => ({ id: p.id, name: p.name })));
+      throw new Error('Project not found');
+    }
 
     setIsDeploying(true);
     
@@ -79,7 +83,11 @@ export const useProjectGeneration = () => {
 
   const generateCode = useCallback(async (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
-    if (!project) throw new Error('Project not found');
+    if (!project) {
+      console.error('Project not found with ID:', projectId);
+      console.log('Available projects:', projects.map(p => ({ id: p.id, name: p.name })));
+      throw new Error('Project not found');
+    }
 
     try {
       const result = await AICodeService.generateCode(project);
