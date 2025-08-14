@@ -19,6 +19,7 @@ export default function Home() {
   const [selectedProject, setSelectedProject] = useState<ProjectPlan | null>(null);
   const [showVoiceInterface, setShowVoiceInterface] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState("showcase");
   const { session, projects, isGenerating, generateProject, generateCode, deleteProject } = useProjectGeneration();
 
   const projectTypes = [
@@ -71,6 +72,17 @@ export default function Home() {
       case 'completed': return 7;
       default: return -1;
     }
+  };
+
+  const navigateToGenerate = () => {
+    setActiveTab("generate");
+    // Focus on textarea after a brief delay to ensure tab has switched
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea[placeholder*="Examples"]') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.focus();
+      }
+    }, 100);
   };
 
   const getProgressPercentage = () => {
@@ -136,7 +148,7 @@ export default function Home() {
         </Card>
 
         {/* Main Interface */}
-        <Tabs defaultValue="generate" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="showcase">System Demo</TabsTrigger>
             <TabsTrigger value="generate">Generate Project</TabsTrigger>
@@ -148,7 +160,7 @@ export default function Home() {
           </TabsList>
 
           <TabsContent value="showcase" className="space-y-6">
-            <SystemShowcase />
+            <SystemShowcase onNavigateToGenerate={navigateToGenerate} />
           </TabsContent>
 
           <TabsContent value="voice-assistant" className="space-y-6">
@@ -316,7 +328,7 @@ export default function Home() {
                   <p className="text-muted-foreground mb-4">
                     Generate your first project to get started with the AI development system.
                   </p>
-                  <Button onClick={() => (document.querySelector('[value="generate"]') as HTMLElement)?.click()}>
+                  <Button onClick={navigateToGenerate}>
                     Create First Project
                   </Button>
                 </CardContent>

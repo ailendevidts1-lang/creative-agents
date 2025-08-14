@@ -16,7 +16,11 @@ import {
   Zap
 } from 'lucide-react';
 
-const SystemShowcase: React.FC = () => {
+interface SystemShowcaseProps {
+  onNavigateToGenerate?: () => void;
+}
+
+const SystemShowcase: React.FC<SystemShowcaseProps> = ({ onNavigateToGenerate }) => {
   const [activeDemo, setActiveDemo] = useState<string | null>(null);
 
   const capabilities = [
@@ -208,7 +212,7 @@ const SystemShowcase: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="flex justify-center gap-4">
-        <Button size="lg" className="px-8">
+        <Button size="lg" className="px-8" onClick={onNavigateToGenerate}>
           <Rocket className="h-5 w-5 mr-2" />
           Try the System
         </Button>
