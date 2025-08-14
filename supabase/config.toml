@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.workflow-advisor]
 verify_jwt = false
+
+[functions.generate-code]
+verify_jwt = false
+
+[functions.realtime-token]
+verify_jwt = false
+
+[functions.deploy-project]
+verify_jwt = false

@@ -27,7 +27,10 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
   
   const handleDeploy = async () => {
     try {
-      await deployProject(project.id);
+      const result = await deployProject(project.id);
+      if (result.success) {
+        // Show success message
+      }
     } catch (error) {
       console.error('Deployment failed:', error);
     }
@@ -36,8 +39,8 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
   const handleGenerateCode = async () => {
     try {
       const result = await generateCode(project.id);
-      if (result.zipUrl) {
-        window.open(result.zipUrl, '_blank');
+      if (result.success) {
+        // Show success message or download link
       }
     } catch (error) {
       console.error('Code generation failed:', error);

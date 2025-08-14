@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { EnhancedOrchestrator } from '@/agents/enhancedOrchestrator';
+import { AICodeService } from '@/services/aiCodeService';
 import { GenerationSession, ProjectPlan } from '@/agents/types';
 
 export const useProjectGeneration = () => {
@@ -31,14 +32,14 @@ export const useProjectGeneration = () => {
     }
   }, []);
 
-  const deployProject = useCallback(async (projectId: string) => {
+  const deployProject = useCallback(async (projectId: string, deploymentTarget?: string) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) throw new Error('Project not found');
 
     setIsDeploying(true);
     
     try {
-      const result = await orchestrator.deployProject(project);
+      const result = await AICodeService.deployProject(project, deploymentTarget);
       
       if (result.success && result.deploymentUrl) {
         // Update project with deployment info
@@ -50,14 +51,16 @@ export const useProjectGeneration = () => {
                   ...p.metadata,
                   deploymentUrl: result.deploymentUrl,
                   deployedAt: new Date(),
-                  deploymentLogs: result.logs
+                  deploymentLogs: result.deploymentSteps || []
                 }
               }
             : p
         ));
+        
+        return result;
+      } else {
+        throw new Error(result.error || 'Deployment failed');
       }
-      
-      return result;
     } catch (error) {
       console.error('Deployment failed:', error);
       throw error;
@@ -78,11 +81,10 @@ export const useProjectGeneration = () => {
     const project = projects.find(p => p.id === projectId);
     if (!project) throw new Error('Project not found');
 
-    // Simulate code generation
-    return new Promise<{ success: boolean; zipUrl?: string }>((resolve) => {
-      setTimeout(() => {
-        const zipUrl = `https://github.com/generated/${project.name.toLowerCase().replace(/\s+/g, '-')}/archive/main.zip`;
-        
+    try {
+      const result = await AICodeService.generateCode(project);
+      
+      if (result.success && result.codeStructure) {
         // Update project with code generation info
         setProjects(prev => prev.map(p => 
           p.id === projectId 
@@ -91,16 +93,21 @@ export const useProjectGeneration = () => {
                 metadata: { 
                   ...p.metadata,
                   codeGenerated: true,
-                  zipUrl,
+                  codeStructure: result.codeStructure,
                   generatedAt: new Date()
                 }
               }
             : p
         ));
         
-        resolve({ success: true, zipUrl });
-      }, 2000);
-    });
+        return result;
+      } else {
+        throw new Error(result.error || 'Code generation failed');
+      }
+    } catch (error) {
+      console.error('Code generation failed:', error);
+      throw error;
+    }
   }, [projects]);
 
   return {

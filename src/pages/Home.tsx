@@ -8,12 +8,15 @@ import { Progress } from "@/components/ui/progress";
 import { useProjectGeneration } from "@/hooks/useProjectGeneration";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectDetails } from "@/components/ProjectDetails";
+import VoiceInterface from "@/components/VoiceInterface";
+import SystemShowcase from "@/components/SystemShowcase";
 import { ProjectPlan } from "@/agents/types";
 import { Zap, Cpu, Smartphone, Globe, Bot, Wrench, Shield, Eye, CheckCircle } from "lucide-react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectPlan | null>(null);
+  const [showVoiceInterface, setShowVoiceInterface] = useState(false);
   const { session, projects, isGenerating, generateProject, deleteProject } = useProjectGeneration();
 
   const projectTypes = [
@@ -111,13 +114,32 @@ export default function Home() {
 
         {/* Main Interface */}
         <Tabs defaultValue="generate" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="showcase">System Demo</TabsTrigger>
             <TabsTrigger value="generate">Generate Project</TabsTrigger>
+            <TabsTrigger value="voice-assistant">AI Assistant</TabsTrigger>
             <TabsTrigger value="pipeline">View Pipeline</TabsTrigger>
             <TabsTrigger value="projects">
               Active Projects {projects.length > 0 && `(${projects.length})`}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="showcase" className="space-y-6">
+            <SystemShowcase />
+          </TabsContent>
+
+          <TabsContent value="voice-assistant" className="space-y-6">
+            <div className="flex flex-col items-center space-y-6">
+              <div className="text-center space-y-2 max-w-2xl">
+                <h2 className="text-2xl font-bold">AI Development Assistant</h2>
+                <p className="text-muted-foreground">
+                  Talk to your AI assistant about your projects, get coding help, 
+                  architecture advice, and deployment guidance - all through natural conversation.
+                </p>
+              </div>
+              <VoiceInterface onSpeakingChange={setShowVoiceInterface} />
+            </div>
+          </TabsContent>
 
           <TabsContent value="generate" className="space-y-6">
             <Card>
