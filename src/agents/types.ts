@@ -59,6 +59,19 @@ export interface ProjectPlan {
     }>;
   };
   deploymentTargets: string[];
+  metadata?: {
+    aiConfig?: any;
+    codeStructure?: any;
+    qaStrategy?: any;
+    deploymentConfig?: any;
+    generatedAt?: Date;
+    version?: string;
+    codeGenerated?: boolean;
+    deploymentUrl?: string;
+    deployedAt?: Date;
+    deploymentLogs?: string[];
+    zipUrl?: string;
+  };
 }
 
 export interface AgentResponse {

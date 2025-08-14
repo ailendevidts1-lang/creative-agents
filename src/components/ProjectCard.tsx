@@ -103,9 +103,25 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDel
           </Button>
           <Button variant="outline" className="flex-1">
             <Code className="h-4 w-4 mr-2" />
-            Generate Code
+            {project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
           </Button>
         </div>
+        
+        {project.metadata?.deploymentUrl && (
+          <div className="mt-2 p-2 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-green-700 dark:text-green-300">🚀 Deployed</span>
+              <a 
+                href={project.metadata.deploymentUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-green-600 dark:text-green-400 hover:underline"
+              >
+                View Live →
+              </a>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

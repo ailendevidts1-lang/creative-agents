@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useProjectGeneration } from '@/hooks/useProjectGeneration';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectPlan } from '@/agents/types';
 import { 
@@ -12,7 +13,8 @@ import {
   Layers, 
   Clock, 
   Target,
-  Rocket
+  Rocket,
+  Bot
 } from 'lucide-react';
 
 interface ProjectDetailsProps {
@@ -21,6 +23,27 @@ interface ProjectDetailsProps {
 }
 
 export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack }) => {
+  const { deployProject, generateCode, isDeploying } = useProjectGeneration();
+  
+  const handleDeploy = async () => {
+    try {
+      await deployProject(project.id);
+    } catch (error) {
+      console.error('Deployment failed:', error);
+    }
+  };
+
+  const handleGenerateCode = async () => {
+    try {
+      const result = await generateCode(project.id);
+      if (result.zipUrl) {
+        window.open(result.zipUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Code generation failed:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -318,14 +341,85 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
         </TabsContent>
       </Tabs>
 
+      {/* Deployment Status */}
+      {project.metadata?.deploymentUrl && (
+        <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <CardHeader>
+            <CardTitle className="text-green-700 dark:text-green-300 flex items-center gap-2">
+              <Rocket className="h-5 w-5" />
+              Deployment Active
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span className="text-green-600 dark:text-green-400">
+                Your project is live and accessible!
+              </span>
+              <a 
+                href={project.metadata.deploymentUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-600 dark:text-green-400 hover:underline font-medium"
+              >
+                View Live Site →
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Configuration */}
+      {project.metadata?.aiConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              AI Integration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {project.metadata.aiConfig.models?.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2">AI Models</h4>
+                <div className="flex flex-wrap gap-2">
+                  {project.metadata.aiConfig.models.map((model: string, index: number) => (
+                    <Badge key={index} variant="default">{model}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {project.metadata.aiConfig.edgeFunctions?.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2">Edge Functions</h4>
+                <div className="space-y-2">
+                  {project.metadata.aiConfig.edgeFunctions.map((func: any, index: number) => (
+                    <div key={index} className="p-3 border border-border rounded-lg">
+                      <div className="font-medium">{func.name}</div>
+                      <div className="text-sm text-muted-foreground">{func.purpose}</div>
+                      <Badge variant="outline" className="mt-1">{func.model}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex gap-3">
-        <Button className="flex-1">
+        <Button onClick={handleGenerateCode} className="flex-1">
           <Code className="h-4 w-4 mr-2" />
-          Generate Code
+          {project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
         </Button>
-        <Button variant="outline" className="flex-1">
+        <Button 
+          variant="outline" 
+          className="flex-1" 
+          onClick={handleDeploy}
+          disabled={isDeploying}
+        >
           <Rocket className="h-4 w-4 mr-2" />
-          Deploy Project
+          {isDeploying ? 'Deploying...' : project.metadata?.deploymentUrl ? 'Redeploy' : 'Deploy Project'}
         </Button>
       </div>
     </div>
