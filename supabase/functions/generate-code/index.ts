@@ -62,6 +62,8 @@ Requirements:
 
 Please provide a detailed file-by-file breakdown with actual code content.`;
 
+    console.log('Calling OpenAI API with prompt...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -73,7 +75,7 @@ Please provide a detailed file-by-file breakdown with actual code content.`;
         messages: [
           {
             role: 'system',
-            content: 'You are an expert full-stack developer and AI engineer. Generate complete, production-ready code with best practices, proper error handling, and comprehensive documentation. Focus on clean architecture and scalable solutions.'
+            content: 'You are an expert full-stack developer and AI engineer. Generate complete, production-ready code with best practices, proper error handling, and comprehensive documentation. Focus on clean architecture and scalable solutions. Return code in a structured format with clear file separations and include file paths.'
           },
           {
             role: 'user',
@@ -84,6 +86,8 @@ Please provide a detailed file-by-file breakdown with actual code content.`;
         stream: false
       }),
     });
+    
+    console.log('OpenAI API response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.text();

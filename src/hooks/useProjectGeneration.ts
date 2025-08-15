@@ -89,8 +89,12 @@ export const useProjectGeneration = () => {
       throw new Error('Project not found');
     }
 
+    console.log('Starting code generation for project:', project.name);
+    console.log('Project plan:', project);
+
     try {
       const result = await AICodeService.generateCode(project);
+      console.log('Code generation result:', result);
       
       if (result.success && result.data?.codeStructure) {
         // Update project with code generation info
@@ -108,6 +112,11 @@ export const useProjectGeneration = () => {
               }
             : p
         ));
+        
+        // Show the generated code in the console for debugging
+        if (result.data.codeStructure.generatedCode) {
+          console.log('Generated code preview:', result.data.codeStructure.generatedCode.substring(0, 1000) + '...');
+        }
         
         return result;
       } else {

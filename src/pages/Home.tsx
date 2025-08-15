@@ -8,19 +8,24 @@ import { Progress } from "@/components/ui/progress";
 import { useProjectGeneration } from "@/hooks/useProjectGeneration";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectDetails } from "@/components/ProjectDetails";
+import { CodeViewer } from "@/components/CodeViewer";
 import VoiceInterface from "@/components/VoiceInterface";
 import SystemShowcase from "@/components/SystemShowcase";
 import { Settings } from "@/pages/Settings";
 import { ProjectPlan } from "@/agents/types";
 import { Zap, Cpu, Smartphone, Globe, Bot, Wrench, Shield, Eye, CheckCircle, Settings as SettingsIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectPlan | null>(null);
   const [showVoiceInterface, setShowVoiceInterface] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCodeViewer, setShowCodeViewer] = useState(false);
+  const [selectedCodeProject, setSelectedCodeProject] = useState<ProjectPlan | null>(null);
   const [activeTab, setActiveTab] = useState("showcase");
   const { session, projects, isGenerating, generateProject, generateCode, deleteProject } = useProjectGeneration();
+  const { toast } = useToast();
 
   const projectTypes = [
     { icon: Globe, name: "Web Apps", desc: "SaaS dashboards, e-commerce, social networks" },
@@ -53,9 +58,36 @@ export default function Home() {
 
   const handleGenerateCode = async (project: ProjectPlan) => {
     try {
-      await generateCode(project.id);
+      // If code is already generated, show viewer
+      if (project.metadata?.codeGenerated) {
+        setSelectedCodeProject(project);
+        setShowCodeViewer(true);
+        return;
+      }
+
+      // Generate new code
+      const result = await generateCode(project.id);
+      
+      if (result?.success) {
+        toast({
+          title: "Code Generated Successfully!",
+          description: `Code for ${project.name} has been generated.`,
+        });
+        
+        // Show the code viewer with the generated code
+        const updatedProject = projects.find(p => p.id === project.id);
+        if (updatedProject?.metadata?.codeGenerated) {
+          setSelectedCodeProject(updatedProject);
+          setShowCodeViewer(true);
+        }
+      }
     } catch (error) {
       console.error("Code generation failed:", error);
+      toast({
+        title: "Code Generation Failed",
+        description: error instanceof Error ? error.message : "An error occurred while generating code.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -336,6 +368,18 @@ export default function Home() {
             )}
           </TabsContent>
         </Tabs>
+        
+        {/* Code Viewer Modal */}
+        <CodeViewer
+          isOpen={showCodeViewer}
+          onClose={() => {
+            setShowCodeViewer(false);
+            setSelectedCodeProject(null);
+          }}
+          codeStructure={selectedCodeProject?.metadata?.codeStructure}
+          zipUrl={selectedCodeProject?.metadata?.zipUrl}
+          projectName={selectedCodeProject?.name}
+        />
       </div>
     </div>
   );
