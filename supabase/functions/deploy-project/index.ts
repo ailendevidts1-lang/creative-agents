@@ -14,6 +14,17 @@ serve(async (req) => {
 
   try {
     const { projectPlan, deploymentTarget } = await req.json();
+    
+    if (!projectPlan) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Project plan is required',
+        message: 'Deployment failed'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!openAIApiKey) {

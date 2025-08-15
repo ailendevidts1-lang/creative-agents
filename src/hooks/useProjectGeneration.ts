@@ -45,7 +45,7 @@ export const useProjectGeneration = () => {
     try {
       const result = await AICodeService.deployProject(project, deploymentTarget);
       
-      if (result.success && result.deploymentUrl) {
+      if (result.success && result.data?.deploymentUrl) {
         // Update project with deployment info
         setProjects(prev => prev.map(p => 
           p.id === projectId 
@@ -53,9 +53,9 @@ export const useProjectGeneration = () => {
                 ...p, 
                 metadata: { 
                   ...p.metadata,
-                  deploymentUrl: result.deploymentUrl,
+                  deploymentUrl: result.data.deploymentUrl,
                   deployedAt: new Date(),
-                  deploymentLogs: result.deploymentSteps || []
+                  deploymentLogs: result.data.deploymentSteps || []
                 }
               }
             : p
@@ -92,7 +92,7 @@ export const useProjectGeneration = () => {
     try {
       const result = await AICodeService.generateCode(project);
       
-      if (result.success && result.codeStructure) {
+      if (result.success && result.data?.codeStructure) {
         // Update project with code generation info
         setProjects(prev => prev.map(p => 
           p.id === projectId 
@@ -101,7 +101,8 @@ export const useProjectGeneration = () => {
                 metadata: { 
                   ...p.metadata,
                   codeGenerated: true,
-                  codeStructure: result.codeStructure,
+                  codeStructure: result.data.codeStructure,
+                  zipUrl: result.data.zipUrl,
                   generatedAt: new Date()
                 }
               }

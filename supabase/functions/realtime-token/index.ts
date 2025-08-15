@@ -54,13 +54,18 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Realtime session created successfully");
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({
+      success: true,
+      data,
+      message: 'Realtime session created successfully'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error("Error creating realtime session:", error);
     return new Response(JSON.stringify({ 
+      success: false,
       error: error.message,
       message: 'Failed to create realtime session'
     }), {

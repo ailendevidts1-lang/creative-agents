@@ -93,11 +93,11 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ onSpeakingChange }) => 
         throw new Error(tokenResult.error || 'Failed to get OpenAI token. Please check your API key configuration.');
       }
 
-      if (!tokenResult.token?.client_secret?.value) {
+      if (!tokenResult.data?.client_secret?.value) {
         throw new Error('Invalid token format received from server');
       }
 
-      const ephemeralToken = tokenResult.token.client_secret.value;
+      const ephemeralToken = tokenResult.data.client_secret.value;
 
       chatRef.current = new RealtimeChat(handleMessage);
       await chatRef.current.init(ephemeralToken);

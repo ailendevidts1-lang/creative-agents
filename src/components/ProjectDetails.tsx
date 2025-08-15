@@ -37,8 +37,8 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, onBack 
     try {
       console.log('Starting deployment for project:', currentProject.id);
       const result = await deployProject(currentProject.id);
-      if (result.success) {
-        console.log('Deployment successful:', result.deploymentUrl);
+      if (result.success && result.data?.deploymentUrl) {
+        console.log('Deployment successful:', result.data.deploymentUrl);
       }
     } catch (error) {
       console.error('Deployment failed:', error);

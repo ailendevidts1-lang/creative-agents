@@ -14,6 +14,17 @@ serve(async (req) => {
 
   try {
     const { projectPlan } = await req.json();
+    
+    if (!projectPlan) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Project plan is required',
+        message: 'Code generation failed'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!openAIApiKey) {
@@ -99,6 +110,7 @@ Please provide a detailed file-by-file breakdown with actual code content.`;
     return new Response(JSON.stringify({
       success: true,
       codeStructure,
+      zipUrl: `https://fake-zip-storage.com/projects/${projectPlan.name?.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.zip`,
       message: 'Code generated successfully'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
