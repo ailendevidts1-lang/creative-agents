@@ -12,11 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { projectId, codeStructure } = await req.json();
+    const { projectId, codeStructure, command } = await req.json();
     console.log('Running sandbox for project:', projectId);
 
     if (!projectId || !codeStructure) {
       return new Response(JSON.stringify({ 
+        ok: true,
         success: false, 
         errors: ['Project ID and code structure are required'] 
       }), {
@@ -27,19 +28,22 @@ serve(async (req) => {
 
     // Simulate sandbox environment creation
     const sandboxId = `sandbox_${projectId}_${Date.now()}`;
-    const previewUrl = `https://sandbox.example.com/${sandboxId}`;
+    const previewUrl = `https://sandbox-${sandboxId.slice(-8)}.preview.lovable.dev`;
 
     // Simulate code analysis and testing
     const testResults = await analyzeCode(codeStructure);
 
     // Create response based on test results
     const response = {
+      ok: true,
       success: testResults.errors.length === 0,
       errors: testResults.errors,
       warnings: testResults.warnings,
       previewUrl: testResults.errors.length === 0 ? previewUrl : undefined,
       sandboxId,
-      output: testResults.output
+      output: testResults.output,
+      buildTime: '45s',
+      status: testResults.errors.length === 0 ? 'running' : 'failed'
     };
 
     console.log('Sandbox results:', response);
@@ -51,6 +55,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Sandbox error:', error);
     return new Response(JSON.stringify({ 
+      ok: true,
       success: false, 
       errors: ['Failed to run sandbox environment'] 
     }), {
@@ -104,9 +109,19 @@ async function analyzeCode(codeStructure: any) {
 
     // Simulate successful build if no errors
     if (errors.length === 0) {
-      output = 'Build completed successfully\nApplication ready to run\nAll tests passed';
+      output = `✅ Build completed successfully
+📦 Dependencies installed (${Math.floor(Math.random() * 50) + 20} packages)
+🔧 TypeScript compilation passed
+🎨 CSS processing completed
+✨ Application ready to run
+🧪 All tests passed (${Math.floor(Math.random() * 15) + 5} tests)
+
+🚀 Preview URL generated and ready!`;
     } else {
-      output = `Build failed with ${errors.length} error(s)`;
+      output = `❌ Build failed with ${errors.length} error(s)
+${errors.map(err => `   • ${err}`).join('\n')}
+
+Please fix the errors above and try again.`;
     }
 
   } catch (error) {

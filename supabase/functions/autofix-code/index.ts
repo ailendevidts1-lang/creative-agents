@@ -73,7 +73,7 @@ Respond with a JSON object containing:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           { 
             role: 'system', 
@@ -81,8 +81,7 @@ Respond with a JSON object containing:
           },
           { role: 'user', content: fixPrompt }
         ],
-        temperature: 0.1,
-        max_tokens: 4000
+        max_completion_tokens: 4000
       }),
     });
 
