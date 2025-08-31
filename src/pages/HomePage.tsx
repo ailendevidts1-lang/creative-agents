@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PromptInterface } from "@/components/PromptInterface";
 import { FileUpload } from "@/components/FileUpload";
 import { PipelineVisualization } from "@/components/PipelineVisualization";
+import { useProjects } from "@/hooks/useProjects";
 import { 
   Brain, 
   Zap, 
@@ -20,6 +21,8 @@ import {
 export function HomePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const { createProject, isCreating } = useProjects();
 
   const capabilities = [
     { icon: Globe, title: "Web Applications", desc: "SaaS platforms, e-commerce, social networks" },
@@ -33,17 +36,49 @@ export function HomePage() {
   const handlePromptSubmit = async (prompt: string) => {
     setIsGenerating(true);
     setCurrentStep("Analysis");
+    setGenerationProgress(0);
     
-    // Simulate pipeline stages
-    const stages = ["Analysis", "Architecture", "Generation", "Testing", "Fixing", "Delivery"];
+    // Simulate pipeline stages with real project creation
+    const stages = [
+      "Infinite Interpretation", 
+      "Autonomous Architecture", 
+      "Batch Evolution", 
+      "Sandbox Intelligence", 
+      "Self-Repair", 
+      "Final Assembly"
+    ];
     
-    for (const stage of stages) {
-      setCurrentStep(stage);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      for (let i = 0; i < stages.length; i++) {
+        const stage = stages[i];
+        setCurrentStep(stage);
+        setGenerationProgress(((i + 1) / stages.length) * 100);
+        
+        // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
+      // Create the actual project in the database
+      const project = await createProject(prompt);
+      
+      if (project) {
+        setCurrentStep("Completed");
+        // Reset after showing completion
+        setTimeout(() => {
+          setIsGenerating(false);
+          setCurrentStep(null);
+          setGenerationProgress(0);
+        }, 2000);
+      } else {
+        throw new Error("Failed to create project");
+      }
+      
+    } catch (error) {
+      console.error("Generation failed:", error);
+      setIsGenerating(false);
+      setCurrentStep(null);
+      setGenerationProgress(0);
     }
-    
-    setIsGenerating(false);
-    setCurrentStep(null);
   };
 
   const handleFileUpload = (files: File[]) => {
@@ -122,7 +157,7 @@ export function HomePage() {
           <CardContent>
             <PromptInterface 
               onSubmit={handlePromptSubmit}
-              isGenerating={isGenerating}
+              isGenerating={isGenerating || isCreating}
             />
           </CardContent>
         </Card>
@@ -145,18 +180,19 @@ export function HomePage() {
       </div>
 
       {/* Pipeline Visualization */}
-      {isGenerating && (
+      {(isGenerating || isCreating) && (
         <Card className="ai-card glow">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <Zap className="w-6 h-6 text-primary animate-pulse" />
-              AI Engineering Pipeline
+              AI Engineering Pipeline Active
             </CardTitle>
           </CardHeader>
           <CardContent>
             <PipelineVisualization 
               currentStep={currentStep}
-              isActive={isGenerating}
+              isActive={isGenerating || isCreating}
+              progress={generationProgress}
             />
           </CardContent>
         </Card>

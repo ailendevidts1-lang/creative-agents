@@ -15,9 +15,10 @@ import {
 interface PipelineVisualizationProps {
   currentStep: string | null;
   isActive: boolean;
+  progress?: number;
 }
 
-export function PipelineVisualization({ currentStep, isActive }: PipelineVisualizationProps) {
+export function PipelineVisualization({ currentStep, isActive, progress = 0 }: PipelineVisualizationProps) {
   const stages = [
     { 
       id: "Analysis", 
@@ -62,6 +63,7 @@ export function PipelineVisualization({ currentStep, isActive }: PipelineVisuali
   };
 
   const getProgress = () => {
+    if (progress > 0) return progress;
     if (!currentStep) return 0;
     const currentIndex = getCurrentStageIndex();
     return ((currentIndex + 1) / stages.length) * 100;
