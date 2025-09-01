@@ -8,7 +8,11 @@ import { ProjectDetailsModal } from "@/components/ProjectDetailsModal";
 import { formatDistanceToNow } from "date-fns";
 import { FolderOpen, Plus, Settings, Play, Eye, Trash2, Loader2 } from "lucide-react";
 
-export function ProjectsPage() {
+interface ProjectsPageProps {
+  onNavigateToStudio?: (projectId: string) => void;
+}
+
+export function ProjectsPage({ onNavigateToStudio }: ProjectsPageProps) {
   const { projects, isLoading, deleteProject } = useProjects();
   const [selectedProject, setSelectedProject] = useState<AIProject | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
@@ -122,9 +126,13 @@ export function ProjectsPage() {
                       <Eye className="w-4 h-4 mr-2" />
                       View
                     </Button>
-                    <Button size="sm" variant="ghost" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => onNavigateToStudio?.(project.id)}
+                    >
                       <Play className="w-4 h-4 mr-2" />
-                      Continue
+                      Open Studio
                     </Button>
                     <Button 
                       size="sm" 

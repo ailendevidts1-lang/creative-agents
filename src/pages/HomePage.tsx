@@ -18,7 +18,11 @@ import {
   ArrowRight
 } from "lucide-react";
 
-export function HomePage() {
+interface HomePageProps {
+  onNavigateToStudio?: (projectId: string) => void;
+}
+
+export function HomePage({ onNavigateToStudio }: HomePageProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -63,11 +67,12 @@ export function HomePage() {
       
       if (project) {
         setCurrentStep("Completed");
-        // Reset after showing completion
+        // Navigate to studio after a brief delay
         setTimeout(() => {
           setIsGenerating(false);
           setCurrentStep(null);
           setGenerationProgress(0);
+          onNavigateToStudio?.(project.id);
         }, 2000);
       } else {
         throw new Error("Failed to create project");
