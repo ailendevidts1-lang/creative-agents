@@ -28,14 +28,6 @@ export function HomePage({ onNavigateToStudio }: HomePageProps) {
   const [generationProgress, setGenerationProgress] = useState(0);
   const { createProject, isCreating } = useProjects();
 
-  const capabilities = [
-    { icon: Globe, title: "Web Applications", desc: "SaaS platforms, e-commerce, social networks" },
-    { icon: Smartphone, title: "Mobile Apps", desc: "Native iOS/Android, cross-platform solutions" },
-    { icon: Monitor, title: "Operating Systems", desc: "Custom Linux distros, embedded systems" },
-    { icon: Bot, title: "AI Assistants", desc: "Voice/text AI with memory and reasoning" },
-    { icon: Wrench, title: "Automation Tools", desc: "Trading bots, IoT controllers, workflows" },
-    { icon: Brain, title: "AI Swarms", desc: "Multi-agent systems, distributed intelligence" },
-  ];
 
   const handlePromptSubmit = async (prompt: string) => {
     setIsGenerating(true);
@@ -122,32 +114,6 @@ export function HomePage({ onNavigateToStudio }: HomePageProps) {
         </div>
       </div>
 
-      {/* Capabilities Grid */}
-      <Card className="ai-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-primary" />
-            What Can We Build?
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {capabilities.map((capability, index) => (
-              <div key={index} className="ai-card group cursor-pointer">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center group-hover:glow transition-all duration-300">
-                    <capability.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-semibold">{capability.title}</h3>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {capability.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Main Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -203,35 +169,6 @@ export function HomePage({ onNavigateToStudio }: HomePageProps) {
         </Card>
       )}
 
-      {/* How It Works */}
-      <Card className="ai-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-primary" />
-            How the Magic Happens
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { title: "Infinite Interpretation", desc: "Deep semantic analysis maps your idea to optimal system design" },
-              { title: "Autonomous Architecture", desc: "AI acts like a full engineering department designing scalable systems" },
-              { title: "Batch Evolution", desc: "Code evolves through iterative swarms of specialized AI engineers" },
-              { title: "Self-Repair & Delivery", desc: "Autonomous testing, debugging, and production-ready delivery" }
-            ].map((step, index) => (
-              <div key={index} className="relative">
-                <div className="pipeline-stage">
-                  <h4 className="font-semibold mb-2">{step.title}</h4>
-                  <p className="text-sm text-muted-foreground">{step.desc}</p>
-                </div>
-                {index < 3 && (
-                  <ArrowRight className="hidden md:block absolute -right-8 top-1/2 transform -translate-y-1/2 w-6 h-6 text-primary/60" />
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Home, FolderOpen, Settings, Cpu } from "lucide-react";
+import { Home, FolderOpen, Settings, Cpu, Monitor } from "lucide-react";
 
 interface NavigationProps {
   currentPage: string;
-  onPageChange: (page: "home" | "projects" | "settings") => void;
+  onPageChange: (page: "home" | "projects" | "settings" | "studio") => void;
 }
 
 export function Navigation({ currentPage, onPageChange }: NavigationProps) {
@@ -48,11 +48,22 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
         <Button
           variant="ghost"
           className={`nav-item w-full justify-start ${
+            currentPage === "studio" ? "active" : ""
+          }`}
+          onClick={() => onPageChange("studio")}
+        >
+          <Settings className="w-5 h-5" />
+          Studio
+        </Button>
+
+        <Button
+          variant="ghost"
+          className={`nav-item w-full justify-start ${
             currentPage === "settings" ? "active" : ""
           }`}
           onClick={() => onPageChange("settings")}
         >
-          <Settings className="w-5 h-5" />
+          <Monitor className="w-5 h-5" />
           Instellingen
         </Button>
       </div>
