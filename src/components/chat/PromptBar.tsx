@@ -6,14 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 interface PromptBarProps {
   onSendMessage: (message: string) => void;
   onSwitchToVoice: () => void;
+  disabled?: boolean;
 }
 
-export function PromptBar({ onSendMessage, onSwitchToVoice }: PromptBarProps) {
+export function PromptBar({ onSendMessage, onSwitchToVoice, disabled = false }: PromptBarProps) {
   const [message, setMessage] = useState("");
   const [isMultiline, setIsMultiline] = useState(false);
 
   const handleSubmit = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || disabled) return;
     
     onSendMessage(message);
     setMessage("");
@@ -44,11 +45,14 @@ export function PromptBar({ onSendMessage, onSwitchToVoice }: PromptBarProps) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message here..."
-              className="min-h-[48px] max-h-32 resize-none glass-panel border-border/40 
+              placeholder={disabled ? "Processing your request..." : "Type your message here..."}
+              disabled={disabled}
+              className={`min-h-[48px] max-h-32 resize-none glass-panel border-border/40 
                          bg-input/50 text-foreground placeholder:text-muted-foreground 
                          focus:outline-none focus:ring-2 focus:ring-primary/50 
-                         focus:border-primary/50 luxury-transition"
+                         focus:border-primary/50 luxury-transition ${
+                           disabled ? "opacity-50 cursor-not-allowed" : ""
+                         }`}
               rows={1}
             />
             
@@ -84,7 +88,7 @@ export function PromptBar({ onSendMessage, onSwitchToVoice }: PromptBarProps) {
 
             <Button
               onClick={handleSubmit}
-              disabled={!message.trim()}
+              disabled={!message.trim() || disabled}
               size="lg"
               className="w-12 h-12 rounded-2xl neon-glow luxury-transition"
             >

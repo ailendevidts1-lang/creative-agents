@@ -5,9 +5,16 @@ import { Bot, User } from "lucide-react";
 
 interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
+  type?: "text" | "plan" | "tool-result" | "error";
+  metadata?: {
+    planId?: string;
+    toolResults?: any[];
+    sources?: any[];
+    confidence?: number;
+  };
   toolCalls?: Array<{
     name: string;
     parameters: Record<string, any>;
@@ -42,19 +49,26 @@ export function ChatThread({ messages }: ChatThreadProps) {
           >
             {/* Avatar */}
             <div className={`w-10 h-10 rounded-2xl glass-panel flex items-center justify-center ${
-              message.role === "user" ? "bg-primary/10" : "bg-secondary/50"
+              message.role === "user" ? "bg-primary/10" : 
+              message.role === "system" ? "bg-destructive/10" : "bg-secondary/50"
             }`}>
               {message.role === "user" ? (
                 <User className="w-5 h-5" />
               ) : (
-                <Bot className="w-5 h-5" />
+                <Bot className={`w-5 h-5 ${message.role === "system" ? "text-destructive" : ""}`} />
               )}
             </div>
 
             {/* Message Content */}
             <div className={`flex-1 space-y-2 ${message.role === "user" ? "items-end" : "items-start"} flex flex-col`}>
-              <div className={`chat-bubble max-w-2xl ${message.role}`}>
-                <p className="text-sm leading-relaxed">{message.content}</p>
+              <div className={`chat-bubble max-w-2xl ${message.role} ${
+                message.type === "error" ? "border-destructive/20 bg-destructive/5" : ""
+              }`}>
+                <p className={`text-sm leading-relaxed ${
+                  message.type === "error" ? "text-destructive" : ""
+                }`}>
+                  {message.content}
+                </p>
                 
                 {/* Tool Calls */}
                 {message.toolCalls && message.toolCalls.length > 0 && (
