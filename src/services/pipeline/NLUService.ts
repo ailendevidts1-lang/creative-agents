@@ -26,18 +26,24 @@ export class NLUService {
       throw new Error('NLU Service not initialized');
     }
 
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      throw new Error('Valid text input is required for NLU processing');
+    }
+
     try {
+      console.log('Processing text with NLU:', text);
+      
       // Call our edge function for intent classification
       const { data, error } = await supabase.functions.invoke('classify-intent', {
         body: {
-          text,
+          text: text.trim(),
           model: this.config.model
         }
       });
 
       if (error) {
         console.error('NLU processing error:', error);
-        // Return default classification
+        // Return default classification instead of throwing
         return this.createFallbackResult(text);
       }
 
@@ -45,8 +51,8 @@ export class NLUService {
         intent: data.intent || 'general',
         entities: data.entities || {},
         confidence: data.confidence || 0.5,
-        needsPlanning: data.needsPlanning || this.requiresPlanning(data.intent),
-        isQuestion: data.isQuestion || this.isQuestion(text)
+        needsPlanning: data.needsPlanning ?? this.requiresPlanning(data.intent || 'general'),
+        isQuestion: data.isQuestion ?? this.isQuestion(text)
       };
 
       console.log('NLU Result:', result);

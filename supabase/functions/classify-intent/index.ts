@@ -12,10 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { text, model = 'gpt-4o-mini' } = await req.json();
+    const body = await req.json();
+    const { text, model = 'gpt-4o-mini' } = body || {};
     
-    if (!text) {
-      throw new Error('No text provided for classification');
+    console.log('Received classify-intent request:', { text, model });
+    
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      console.error('Invalid text input:', text);
+      throw new Error('Valid text input is required for classification');
     }
 
     const prompt = `Classify the following user input into one of these categories and extract relevant entities:
@@ -28,7 +32,7 @@ Categories:
 - development: Coding, debugging, project-related questions
 - general: Everything else
 
-Text to classify: "${text}"
+Text to classify: "${text.trim()}"
 
 Respond with JSON in this format:
 {
@@ -76,16 +80,23 @@ Respond with JSON in this format:
       );
     } catch (parseError) {
       console.error('Failed to parse AI response:', content);
+      console.error('Parse error:', parseError);
       
-      // Fallback classification
+      // Fallback classification with better logic
+      const lowerText = text.toLowerCase().trim();
       const fallback = {
-        intent: 'general',
-        entities: {},
-        confidence: 0.5,
-        needsPlanning: false,
-        isQuestion: text.includes('?') || text.toLowerCase().startsWith('what') || 
-                   text.toLowerCase().startsWith('how') || text.toLowerCase().startsWith('when')
+        intent: simpleClassifyIntent(lowerText),
+        entities: simpleExtractEntities(lowerText),
+        confidence: 0.6,
+        needsPlanning: simpleNeedsPlanning(lowerText),
+        isQuestion: lowerText.includes('?') || lowerText.startsWith('what') || 
+                   lowerText.startsWith('how') || lowerText.startsWith('when') ||
+                   lowerText.startsWith('where') || lowerText.startsWith('why') ||
+                   lowerText.startsWith('who') || lowerText.startsWith('can you') ||
+                   lowerText.startsWith('do you') || lowerText.startsWith('will you')
       };
+      
+      console.log('Using fallback classification:', fallback);
       
       return new Response(
         JSON.stringify(fallback),
@@ -95,12 +106,51 @@ Respond with JSON in this format:
 
   } catch (error) {
     console.error('Intent classification error:', error);
+    
+    // Return a safe fallback response
+    const safeFallback = {
+      intent: 'general',
+      entities: {},
+      confidence: 0.5,
+      needsPlanning: false,
+      isQuestion: false
+    };
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      JSON.stringify(safeFallback),
+      { 
+        status: 200, // Return 200 so the client gets the fallback
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
+  }
+
+  // Helper functions for fallback classification
+  function simpleClassifyIntent(text: string): string {
+    if (text.includes('timer') || text.includes('alarm') || text.includes('remind')) return 'timer';
+    if (text.includes('note') || text.includes('write') || text.includes('remember')) return 'notes';
+    if (text.includes('weather') || text.includes('temperature')) return 'weather';
+    if (text.includes('search') || text.includes('find') || text.includes('look')) return 'search';
+    if (text.includes('code') || text.includes('debug') || text.includes('implement')) return 'development';
+    return 'general';
+  }
+
+  function simpleExtractEntities(text: string): Record<string, any> {
+    const entities: Record<string, any> = {};
+    
+    // Extract time patterns
+    const timeMatch = text.match(/(\d+)\s*(minute|min|second|sec|hour|hr)/i);
+    if (timeMatch) entities.duration = timeMatch[0];
+    
+    // Extract locations
+    const locationMatch = text.match(/in\s+([a-z\s]+)/i);
+    if (locationMatch) entities.location = locationMatch[1].trim();
+    
+    return entities;
+  }
+
+  function simpleNeedsPlanning(text: string): boolean {
+    const planningKeywords = ['create', 'set', 'make', 'add', 'start', 'timer', 'note', 'weather', 'search'];
+    return planningKeywords.some(keyword => text.includes(keyword));
   }
 });

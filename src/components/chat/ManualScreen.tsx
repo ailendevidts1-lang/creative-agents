@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Brain, Search, Settings, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -85,17 +86,27 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
     updateAppState({ voiceState: voiceStateMap[pipeline.state] });
   }, [pipeline.state, pipeline.isProcessing, updateAppState]);
 
-  // Handle pipeline responses (including tool results)
+  // Handle pipeline responses (including tool results) - only if pipeline is working
   useEffect(() => {
-    if (pipeline.lastResponse) {
+    if (pipeline.lastResponse && pipeline.lastResponse.trim()) {
       const responseMessage: Message = {
-        id: `response-${Date.now()}`,
+        id: `pipeline-response-${Date.now()}`,
         role: "assistant",
         content: pipeline.lastResponse,
         timestamp: new Date(),
         type: "text"
       };
-      setMessages(prev => [...prev, responseMessage]);
+      
+      // Only add if we don't already have this response
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage?.content === pipeline.lastResponse) {
+          return prev;
+        }
+        return [...prev, responseMessage];
+      });
+      
+      setIsProcessing(false);
     }
   }, [pipeline.lastResponse]);
   // Handle pipeline events for enhanced chat experience
@@ -176,20 +187,32 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
     setMessages(prev => [...prev, rejectionMessage]);
   }, []);
 
-  // Handle errors
+  // Handle errors with better fallback
   useEffect(() => {
     if (pipeline.error) {
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        role: "system",
-        content: `Error: ${pipeline.error.message}`,
-        timestamp: new Date(),
-        type: "error"
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error('Pipeline error:', pipeline.error);
+      
+      // Only show error if we don't have a recent successful response
+      const now = Date.now();
+      const recentMessages = messages.filter(m => 
+        (now - m.timestamp.getTime()) < 5000 && m.role === 'assistant'
+      );
+      
+      if (recentMessages.length === 0) {
+        const errorMessage: Message = {
+          id: `pipeline-error-${Date.now()}`,
+          role: "system",
+          content: `I'm having some technical difficulties. Let me try a simpler approach to help you.`,
+          timestamp: new Date(),
+          type: "error"
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+      
       pipeline.clearError();
+      setIsProcessing(false);
     }
-  }, [pipeline.error, pipeline.clearError]);
+  }, [pipeline.error, pipeline.clearError, messages]);
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isProcessing) return;
@@ -204,21 +227,61 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Process through pipeline
     try {
-      await pipeline.processText(content.trim());
+      setIsProcessing(true);
+
+      // First try the full pipeline for complex requests
+      if (pipeline.isInitialized) {
+        try {
+          console.log('Processing through pipeline:', content.trim());
+          await pipeline.processText(content.trim());
+          return; // Pipeline will handle the response
+        } catch (pipelineError) {
+          console.error('Pipeline processing failed:', pipelineError);
+          // Fall back to simple chat
+        }
+      }
+
+      // Fallback: Simple direct chat
+      console.log('Using fallback simple chat');
+      const { data, error } = await supabase.functions.invoke('simple-chat', {
+        body: {
+          message: content.trim(),
+          context: messages.slice(-5) // Last 5 messages for context
+        }
+      });
+
+      if (error) {
+        throw new Error(`Chat service error: ${error.message}`);
+      }
+
+      if (data?.response) {
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          role: "assistant",
+          content: data.response,
+          timestamp: new Date(),
+          type: "text"
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error('No response received from chat service');
+      }
+
     } catch (error) {
-      console.error("Failed to process message:", error);
+      console.error("Failed to get AI response:", error);
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: "system",
-        content: `Failed to process your message: ${(error as Error).message}`,
+        content: `Sorry, I encountered an error: ${(error as Error).message}. Please try again.`,
         timestamp: new Date(),
         type: "error"
       };
       setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsProcessing(false);
     }
-  }, [isProcessing, pipeline.processText]);
+  }, [isProcessing, pipeline, messages]);
 
   // Format pipeline events for display
   const getPipelineStatusDisplay = () => {
