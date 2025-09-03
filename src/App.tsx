@@ -4,7 +4,7 @@ import { MainLayout } from "@/components/MainLayout";
 
 function App() {
   return (
-    <div className="min-h-screen bg-background neural-grid">
+    <div className="min-h-screen bg-background">
       <MainLayout />
       <Toaster />
     </div>

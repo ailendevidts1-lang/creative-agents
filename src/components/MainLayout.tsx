@@ -1,42 +1,102 @@
 import React, { useState } from "react";
-import { Navigation } from "./Navigation";
-import { HomePage } from "@/pages/HomePage";
-import { ProjectsPage } from "@/pages/ProjectsPage";
-import { SettingsPage } from "@/pages/SettingsPage";
-import { StudioPage } from "@/pages/StudioPage";
+import { VoiceScreen } from "./voice/VoiceScreen";
+import { ManualScreen } from "./chat/ManualScreen";
+import { TopBar } from "./layout/TopBar";
+import { BottomNavigation } from "./layout/BottomNavigation";
+import { SkillsScreen } from "./skills/SkillsScreen";
+import { ApprovalsScreen } from "./social/ApprovalsScreen";
+import { AnalyticsScreen } from "./analytics/AnalyticsScreen";
+import { ProfileScreen } from "./profile/ProfileScreen";
 
-type Page = "home" | "projects" | "settings" | "studio";
+export type AppMode = "voice" | "manual";
+export type AppScreen = "home" | "skills" | "approvals" | "analytics" | "profile";
+export type VoiceState = "idle" | "listening" | "capturing" | "transcribing" | "thinking" | "speaking" | "error";
+
+export interface AppState {
+  mode: AppMode;
+  screen: AppScreen;
+  voiceState: VoiceState;
+  micMuted: boolean;
+  wakeEnabled: boolean;
+  pendingApprovalCount: number;
+  networkState: "online" | "degraded" | "offline";
+}
 
 export function MainLayout() {
-  const [currentPage, setCurrentPage] = useState<Page>("home");
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [appState, setAppState] = useState<AppState>({
+    mode: "voice",
+    screen: "home",
+    voiceState: "idle",
+    micMuted: false,
+    wakeEnabled: true,
+    pendingApprovalCount: 3,
+    networkState: "online"
+  });
 
-  const navigateToStudio = (projectId: string) => {
-    setCurrentProjectId(projectId);
-    setCurrentPage("studio");
+  const updateAppState = (updates: Partial<AppState>) => {
+    setAppState(prev => ({ ...prev, ...updates }));
   };
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case "home":
-        return <HomePage onNavigateToStudio={navigateToStudio} />;
-      case "projects":
-        return <ProjectsPage onNavigateToStudio={navigateToStudio} />;
-      case "settings":
-        return <SettingsPage />;
-      case "studio":
-        return currentProjectId ? <StudioPage projectId={currentProjectId} onNavigateBack={() => setCurrentPage("home")} /> : <HomePage onNavigateToStudio={navigateToStudio} />;
-      default:
-        return <HomePage onNavigateToStudio={navigateToStudio} />;
+  const switchMode = (mode: AppMode) => {
+    updateAppState({ 
+      mode,
+      voiceState: mode === "manual" ? "idle" : appState.voiceState
+    });
+  };
+
+  const switchScreen = (screen: AppScreen) => {
+    updateAppState({ screen });
+  };
+
+  const renderMainContent = () => {
+    if (appState.screen !== "home") {
+      switch (appState.screen) {
+        case "skills":
+          return <SkillsScreen onBack={() => switchScreen("home")} />;
+        case "approvals":
+          return <ApprovalsScreen onBack={() => switchScreen("home")} />;
+        case "analytics":
+          return <AnalyticsScreen onBack={() => switchScreen("home")} />;
+        case "profile":
+          return <ProfileScreen onBack={() => switchScreen("home")} />;
+        default:
+          return null;
+      }
     }
+
+    return appState.mode === "voice" ? (
+      <VoiceScreen 
+        appState={appState}
+        updateAppState={updateAppState}
+      />
+    ) : (
+      <ManualScreen 
+        appState={appState}
+        updateAppState={updateAppState}
+        onSwitchToVoice={() => switchMode("voice")}
+      />
+    );
   };
 
   return (
-    <div className="flex h-screen">
-      {currentPage !== "studio" && <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />}
-      <main className={`flex-1 overflow-auto ${currentPage === "studio" ? "w-full" : ""}`}>
-        {renderPage()}
+    <div className="flex flex-col h-screen bg-background">
+      <TopBar 
+        mode={appState.mode}
+        onModeSwitch={switchMode}
+        networkState={appState.networkState}
+      />
+      
+      <main className="flex-1 overflow-hidden">
+        {renderMainContent()}
       </main>
+
+      {appState.mode === "voice" && (
+        <BottomNavigation 
+          currentScreen={appState.screen}
+          onScreenChange={switchScreen}
+          pendingApprovalCount={appState.pendingApprovalCount}
+        />
+      )}
     </div>
   );
 }
