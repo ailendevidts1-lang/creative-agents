@@ -229,53 +229,79 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
 
     try {
       setIsProcessing(true);
+      let responseGenerated = false;
 
-      // First try the full pipeline for complex requests
-      if (pipeline.isInitialized) {
+      // First try the full pipeline for complex requests (only if initialized and in manual mode)
+      if (pipeline.isInitialized && pipeline.mode === 'manual') {
         try {
           console.log('Processing through pipeline:', content.trim());
           await pipeline.processText(content.trim());
-          return; // Pipeline will handle the response
+          
+          // Wait a bit to see if pipeline generates a response
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          if (pipeline.lastResponse && pipeline.lastResponse.trim()) {
+            responseGenerated = true;
+            console.log('Pipeline generated response:', pipeline.lastResponse);
+          }
         } catch (pipelineError) {
           console.error('Pipeline processing failed:', pipelineError);
-          // Fall back to simple chat
         }
       }
 
-      // Fallback: Simple direct chat
-      console.log('Using fallback simple chat');
-      const { data, error } = await supabase.functions.invoke('simple-chat', {
-        body: {
-          message: content.trim(),
-          context: messages.slice(-5) // Last 5 messages for context
-        }
-      });
+      // If no response from pipeline, use simple chat fallback
+      if (!responseGenerated) {
+        console.log('Using fallback simple chat');
+        const { data, error } = await supabase.functions.invoke('simple-chat', {
+          body: {
+            message: content.trim(),
+            context: messages.slice(-5).map(m => ({
+              type: m.role,
+              content: m.content
+            }))
+          }
+        });
 
-      if (error) {
-        throw new Error(`Chat service error: ${error.message}`);
+        if (error) {
+          console.error('Simple chat error:', error);
+          throw new Error(`Chat service error: ${error.message}`);
+        }
+
+        if (data?.response) {
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}`,
+            role: "assistant",
+            content: data.response,
+            timestamp: new Date(),
+            type: "text"
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          responseGenerated = true;
+        }
       }
 
-      if (data?.response) {
-        const aiMessage: Message = {
-          id: `ai-${Date.now()}`,
+      // Final fallback - always provide some response
+      if (!responseGenerated) {
+        const fallbackMessage: Message = {
+          id: `fallback-${Date.now()}`,
           role: "assistant",
-          content: data.response,
+          content: "I understand you said: \"" + content.trim() + "\". I'm processing your request, but I'm having some technical difficulties right now. How else can I help you?",
           timestamp: new Date(),
           type: "text"
         };
-        setMessages(prev => [...prev, aiMessage]);
-      } else {
-        throw new Error('No response received from chat service');
+        setMessages(prev => [...prev, fallbackMessage]);
       }
 
     } catch (error) {
       console.error("Failed to get AI response:", error);
+      
+      // Always provide an error response
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        role: "system",
-        content: `Sorry, I encountered an error: ${(error as Error).message}. Please try again.`,
+        role: "assistant",
+        content: `I apologize, but I'm experiencing some technical issues. I heard you say: "${content.trim()}". Let me try to help you in a different way. What specific task would you like me to assist with?`,
         timestamp: new Date(),
-        type: "error"
+        type: "text"
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
