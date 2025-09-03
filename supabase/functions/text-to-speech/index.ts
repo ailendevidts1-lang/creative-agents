@@ -18,49 +18,28 @@ serve(async (req) => {
       throw new Error('Text is required for TTS');
     }
 
-    // Generate speech from text using OpenAI TTS
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: text.slice(0, 4096), // Limit text length
-        voice: voice,
-        response_format: 'mp3',
-        speed: Math.max(0.25, Math.min(4.0, speed)) // Clamp speed
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`OpenAI TTS error: ${errorText}`);
-    }
-
-    // Convert audio buffer to base64
-    const arrayBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    );
-
+    // Note: Gemini does not support TTS - you'll need to use a different service
+    // Options: ElevenLabs, Google Cloud TTS, Azure Cognitive Services, etc.
     return new Response(
       JSON.stringify({ 
-        audioContent: base64Audio,
-        format: 'mp3',
-        voice: voice,
-        speed: speed
+        error: 'TTS not available with Gemini. Please use ElevenLabs, Google Cloud TTS, or Azure TTS instead.',
+        suggestion: 'Consider integrating with ElevenLabs API for high-quality text-to-speech'
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        status: 501,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
 
   } catch (error) {
-    console.error('TTS error:', error);
+    console.error('TTS error (Gemini does not support TTS):', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: 'TTS not supported with Gemini API',
+        suggestion: 'Use ElevenLabs, Google Cloud TTS, or Azure TTS for text-to-speech functionality'
+      }),
       {
-        status: 500,
+        status: 501,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

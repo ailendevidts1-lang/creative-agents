@@ -25,10 +25,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not set');
     }
 
     console.log('Starting code generation for project:', projectPlan.name);
@@ -62,41 +62,37 @@ Requirements:
 
 Please provide a detailed file-by-file breakdown with actual code content.`;
 
-    console.log('Calling OpenAI API with prompt...');
+    console.log('Calling Gemini API with prompt...');
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
-        messages: [
+        contents: [
           {
-            role: 'system',
-            content: 'You are an expert full-stack developer and AI engineer. Generate complete, production-ready code with best practices, proper error handling, and comprehensive documentation. Focus on clean architecture and scalable solutions. Return code in a structured format with clear file separations and include file paths.'
-          },
-          {
-            role: 'user',
-            content: codePrompt
+            parts: [{
+              text: `You are an expert full-stack developer and AI engineer. Generate complete, production-ready code with best practices, proper error handling, and comprehensive documentation. Focus on clean architecture and scalable solutions. Return code in a structured format with clear file separations and include file paths.\n\n${codePrompt}`
+            }]
           }
         ],
-        max_completion_tokens: 4000,
-        stream: false
+        generationConfig: {
+          maxOutputTokens: 4000
+        }
       }),
     });
     
-    console.log('OpenAI API response status:', response.status);
+    console.log('Gemini API response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API Error:', errorData);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+      console.error('Gemini API Error:', errorData);
+      throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
-    const generatedCode = data.choices[0].message.content;
+    const generatedCode = data.candidates[0].content.parts[0].text;
 
     console.log('Code generation completed successfully');
 

@@ -19,16 +19,16 @@ serve(async (req) => {
       throw new Error('Query is required');
     }
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
     }
 
     // First, get web search results (simplified - in production you'd use a real search API)
     const searchResults = await performWebSearch(query);
 
-    // Then, use OpenAI to generate a comprehensive answer
-    const aiResponse = await generateAIAnswer(query, searchResults, openaiApiKey);
+    // Then, use Gemini to generate a comprehensive answer
+    const aiResponse = await generateAIAnswer(query, searchResults, geminiApiKey);
 
     return new Response(JSON.stringify({
       response: aiResponse,
@@ -85,26 +85,25 @@ ${context}
 
 Please provide a helpful, accurate, and well-structured answer based on the information available. If the search results don't contain enough information to fully answer the question, acknowledge this and provide what information is available.`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
+      contents: [
         {
-          role: 'system',
-          content: 'You are a helpful AI assistant that provides accurate, well-researched answers based on web search results. Always be factual and cite your sources when possible.'
-        },
-        {
-          role: 'user',
-          content: prompt
+          parts: [{
+            text: `You are a helpful AI assistant that provides accurate, well-researched answers based on web search results. Always be factual and cite your sources when possible.
+
+${prompt}`
+          }]
         }
       ],
-      max_tokens: 500,
-      temperature: 0.7,
+      generationConfig: {
+        maxOutputTokens: 500,
+        temperature: 0.7
+      }
     }),
   });
 
@@ -113,5 +112,5 @@ Please provide a helpful, accurate, and well-structured answer based on the info
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.candidates[0].content.parts[0].text;
 }

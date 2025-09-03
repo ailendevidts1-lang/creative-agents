@@ -48,29 +48,32 @@ Respond with JSON in this format:
   "isQuestion": true/false
 }`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: 'You are an intent classification system. Always respond with valid JSON.' },
-          { role: 'user', content: prompt }
+        contents: [
+          {
+            parts: [{
+              text: `You are an intent classification system. Always respond with valid JSON.\n\n${prompt}`
+            }]
+          }
         ],
-        max_completion_tokens: 300,
-        temperature: 0.1
+        generationConfig: {
+          maxOutputTokens: 300,
+          temperature: 0.1
+        }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
+    const content = data.candidates[0].content.parts[0].text;
     
     try {
       const result = JSON.parse(content);

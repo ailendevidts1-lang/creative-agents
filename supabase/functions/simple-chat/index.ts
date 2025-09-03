@@ -35,18 +35,16 @@ serve(async (req) => {
       content: message
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
+        contents: [
           {
-            role: 'system',
-            content: `You are Jarvis, an advanced AI assistant integrated into a voice-first interface. You help users with:
+            parts: [{
+              text: `You are Jarvis, an advanced AI assistant integrated into a voice-first interface. You help users with:
 
 - Creating timers and reminders
 - Taking and managing notes
@@ -64,23 +62,30 @@ Current capabilities you have access to:
 - Web search and Q&A
 - General knowledge and conversation
 
-Be friendly, efficient, and always aim to be helpful.`
-          },
-          ...contextMessages
+Be friendly, efficient, and always aim to be helpful.
+
+Conversation context:
+${contextMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+Current user message: ${message}`
+            }]
+          }
         ],
-        max_completion_tokens: 500,
-        temperature: 0.7
+        generationConfig: {
+          maxOutputTokens: 500,
+          temperature: 0.7
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    const aiResponse = data.candidates[0].content.parts[0].text;
 
     console.log('AI Response:', aiResponse);
 

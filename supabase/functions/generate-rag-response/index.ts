@@ -54,32 +54,32 @@ Instructions:
 
 Response:`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are a helpful AI assistant that provides accurate, well-sourced answers based on available evidence. Be honest about limitations in your knowledge.' 
-          },
-          { role: 'user', content: prompt }
+        contents: [
+          {
+            parts: [{
+              text: `You are a helpful AI assistant that provides accurate, well-sourced answers based on available evidence. Be honest about limitations in your knowledge.\n\n${prompt}`
+            }]
+          }
         ],
-        max_completion_tokens: 800,
-        temperature: 0.3
+        generationConfig: {
+          maxOutputTokens: 800,
+          temperature: 0.3
+        }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const summary = data.choices[0].message.content;
+    const summary = data.candidates[0].content.parts[0].text;
 
     return new Response(
       JSON.stringify({ 
