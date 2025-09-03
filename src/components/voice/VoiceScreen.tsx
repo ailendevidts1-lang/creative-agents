@@ -3,6 +3,7 @@ import { SiriCircle } from "./SiriCircle";
 import { StatusStrip } from "./StatusStrip";
 import { VoiceDock } from "./VoiceDock";
 import { AppState } from "../MainLayout";
+import { useVoicePipeline } from "@/hooks/useVoicePipeline";
 
 interface VoiceScreenProps {
   appState: AppState;
@@ -10,6 +11,8 @@ interface VoiceScreenProps {
 }
 
 export function VoiceScreen({ appState, updateAppState }: VoiceScreenProps) {
+  const pipeline = useVoicePipeline();
+  
   const handleVoiceStateChange = (voiceState: AppState["voiceState"]) => {
     updateAppState({ voiceState });
   };
