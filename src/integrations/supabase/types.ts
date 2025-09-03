@@ -65,6 +65,63 @@ export type Database = {
         }
         Relationships: []
       }
+      notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      search_history: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          response: string | null
+          sources: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          response?: string | null
+          sources?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          response?: string | null
+          sources?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       secrets: {
         Row: {
           created_at: string
@@ -128,6 +185,69 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      timers: {
+        Row: {
+          created_at: string
+          duration: number
+          expires_at: string
+          id: string
+          name: string
+          remaining: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          expires_at: string
+          id?: string
+          name: string
+          remaining: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          expires_at?: string
+          id?: string
+          name?: string
+          remaining?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          default_timer_sound: string | null
+          id: string
+          updated_at: string
+          user_id: string
+          voice_response_enabled: boolean | null
+          weather_location: string | null
+        }
+        Insert: {
+          created_at?: string
+          default_timer_sound?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          voice_response_enabled?: boolean | null
+          weather_location?: string | null
+        }
+        Update: {
+          created_at?: string
+          default_timer_sound?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          voice_response_enabled?: boolean | null
+          weather_location?: string | null
         }
         Relationships: []
       }
