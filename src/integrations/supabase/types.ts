@@ -65,6 +65,290 @@ export type Database = {
         }
         Relationships: []
       }
+      business_analytics: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric: string
+          period: string | null
+          value: number | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric: string
+          period?: string | null
+          value?: number | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric?: string
+          period?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_analytics_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_assets: {
+        Row: {
+          business_id: string | null
+          content: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          name: string
+          type: string
+          uri: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          name: string
+          type: string
+          uri?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          name?: string
+          type?: string
+          uri?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_assets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_ideas: {
+        Row: {
+          analysis: Json | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          expected_roi: number | null
+          id: string
+          investment: number | null
+          market: string | null
+          ramp_time: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          expected_roi?: number | null
+          id?: string
+          investment?: number | null
+          market?: string | null
+          ramp_time?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          expected_roi?: number | null
+          id?: string
+          investment?: number | null
+          market?: string | null
+          ramp_time?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      business_plans: {
+        Row: {
+          budget: number | null
+          channels: string[] | null
+          created_at: string
+          id: string
+          idea_id: string | null
+          milestones: string[] | null
+          niche: string | null
+          okrs: Json | null
+          ready: boolean | null
+          timeline: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number | null
+          channels?: string[] | null
+          created_at?: string
+          id?: string
+          idea_id?: string | null
+          milestones?: string[] | null
+          niche?: string | null
+          okrs?: Json | null
+          ready?: boolean | null
+          timeline?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number | null
+          channels?: string[] | null
+          created_at?: string
+          id?: string
+          idea_id?: string | null
+          milestones?: string[] | null
+          niche?: string | null
+          okrs?: Json | null
+          ready?: boolean | null
+          timeline?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_plans_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "business_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_tasks: {
+        Row: {
+          assignee: string | null
+          business_id: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          metadata: Json | null
+          priority: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          assignee?: string | null
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string | null
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_tasks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          channels: string[] | null
+          created_at: string
+          daily_revenue: number | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          next_tasks: string[] | null
+          progress: number | null
+          roi: number | null
+          status: string
+          total_revenue: number | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string
+          daily_revenue?: number | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          next_tasks?: string[] | null
+          progress?: number | null
+          roi?: number | null
+          status?: string
+          total_revenue?: number | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string
+          daily_revenue?: number | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          next_tasks?: string[] | null
+          progress?: number | null
+          roi?: number | null
+          status?: string
+          total_revenue?: number | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_skills: {
         Row: {
           bg_color: string
