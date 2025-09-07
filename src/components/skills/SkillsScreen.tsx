@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone } from "lucide-react";
+import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { TimerSkill } from "./TimerSkill";
 import { NotesSkill } from "./NotesSkill";
 import { WeatherSkill } from "./WeatherSkill";
 import { SearchSkill } from "./SearchSkill";
+import { PromptToCodeSkill } from "./PromptToCodeSkill";
 
 interface SkillsScreenProps {
   onBack: () => void;
@@ -16,6 +17,15 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
 
   const coreSkills = [
+    {
+      id: "prompt-to-code",
+      icon: Code,
+      name: "⚙️ Prompt-to-Code System",
+      description: "Transform natural language into production-ready software projects",
+      color: "text-primary",
+      bgColor: "bg-gradient-to-br from-primary/20 to-accent/20",
+      component: PromptToCodeSkill
+    },
     {
       id: "timers",
       icon: Clock,
