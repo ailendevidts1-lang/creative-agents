@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Send, Bot, Code, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Send, Bot, Code, FileText, CheckCircle, Clock, AlertCircle, Zap } from 'lucide-react';
 import { useStudioAI } from '@/hooks/useStudioAI';
+import { useStudioAgent } from '@/hooks/useStudioAgent';
 import { useToast } from '@/hooks/use-toast';
 
 interface AISidecarProps {
@@ -18,6 +19,9 @@ interface AISidecarProps {
 export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecarProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [agentMode, setAgentMode] = useState<'basic' | 'studio'>('studio');
+  
+  // Basic AI hooks
   const { 
     isGenerating, 
     plans, 
@@ -27,18 +31,38 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
     updatePlanStatus,
     clearPatches 
   } = useStudioAI();
+  
+  // Studio Agent hooks
+  const {
+    isProcessing,
+    currentJob,
+    tasks,
+    artifacts,
+    startStudioAgent,
+    clearCurrentSession
+  } = useStudioAgent();
+  
   const { toast } = useToast();
 
   const handleAskAI = async () => {
     if (!prompt.trim() || !projectId) return;
 
     try {
-      await generatePlan(projectId, prompt, currentFiles);
-      setPrompt('');
-      toast({
-        title: "Plan Generated",
-        description: "AI has created a new implementation plan",
-      });
+      if (agentMode === 'studio') {
+        await startStudioAgent(projectId, prompt, currentFiles);
+        setPrompt('');
+        toast({
+          title: "Studio Agent Started",
+          description: "AI agent is processing your request with advanced capabilities.",
+        });
+      } else {
+        await generatePlan(projectId, prompt, currentFiles);
+        setPrompt('');
+        toast({
+          title: "Plan Generated",
+          description: "AI has created a new implementation plan",
+        });
+      }
     } catch (error) {
       console.error('Failed to generate plan:', error);
       toast({
@@ -97,7 +121,9 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
     <div className="h-full border-l">
       <Tabs defaultValue="chat" className="h-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="chat">AI Chat</TabsTrigger>
+          <TabsTrigger value="chat">
+            {agentMode === 'studio' ? 'Studio Agent' : 'AI Chat'}
+          </TabsTrigger>
           <TabsTrigger value="plans">Plans</TabsTrigger>
           <TabsTrigger value="patches">Patches</TabsTrigger>
         </TabsList>
@@ -105,54 +131,152 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
         <TabsContent value="chat" className="h-full p-4">
           <div className="flex flex-col h-full">
             <div className="mb-4">
-              <h3 className="font-medium mb-2 flex items-center gap-2">
-                <Bot className="h-4 w-4" />
-                AI Assistant
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium flex items-center gap-2">
+                  {agentMode === 'studio' ? (
+                    <Zap className="h-4 w-4" />
+                  ) : (
+                    <Bot className="h-4 w-4" />
+                  )}
+                  {agentMode === 'studio' ? 'Studio Agent' : 'AI Assistant'}
+                </h3>
+                <div className="flex gap-1">
+                  <Button
+                    variant={agentMode === 'basic' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setAgentMode('basic')}
+                  >
+                    Basic
+                  </Button>
+                  <Button
+                    variant={agentMode === 'studio' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setAgentMode('studio')}
+                  >
+                    Studio
+                  </Button>
+                </div>
+              </div>
               <p className="text-sm text-muted-foreground">
-                Describe what you want to build or change, and I'll create a plan with code patches.
+                {agentMode === 'studio' 
+                  ? 'Advanced AI agent with Gemini-powered planning, editing, and validation.'
+                  : 'Describe what you want to build or change, and I\'ll create a plan with code patches.'
+                }
               </p>
             </div>
 
             <div className="flex-1">
               <ScrollArea className="h-full">
-                {plans.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Ask me to help with your project!</p>
-                  </div>
-                ) : (
+                {agentMode === 'studio' ? (
+                  // Studio Agent View
                   <div className="space-y-4">
-                    {plans.map(plan => (
-                      <Card 
-                        key={plan.id} 
-                        className={`cursor-pointer transition-colors ${
-                          selectedPlan?.id === plan.id ? 'ring-2 ring-primary' : ''
-                        }`}
-                        onClick={() => setSelectedPlan(plan)}
-                      >
+                    {currentJob ? (
+                      <Card>
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm flex items-center justify-between">
-                            {plan.title}
-                            {getStatusBadge(plan.status)}
+                            Studio Agent Job
+                            {getStatusBadge(currentJob.status)}
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
                           <p className="text-xs text-muted-foreground mb-2">
-                            {plan.description}
+                            {currentJob.user_prompt}
                           </p>
-                          <p className="text-xs">
-                            {plan.files.length} files • {plan.tasks.length} tasks
-                          </p>
-                          {plan.estimatedTime && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <Clock className="h-3 w-3" />
-                              {plan.estimatedTime}
-                            </p>
+                          
+                          {tasks.length > 0 && (
+                            <div className="space-y-2 mb-3">
+                              <span className="text-xs font-medium">Task Progress:</span>
+                              {tasks.map((task) => (
+                                <div key={task.id} className="flex items-center justify-between p-2 border rounded text-xs">
+                                  <div className="flex-1">
+                                    <div className="font-medium">{task.title}</div>
+                                    <div className="text-muted-foreground">Batch {task.batch_number}</div>
+                                  </div>
+                                  {getStatusBadge(task.status)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {artifacts.length > 0 && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                // Convert artifacts to patches format for compatibility
+                                const patches = artifacts.map(artifact => ({
+                                  id: artifact.id,
+                                  planId: currentJob.id,
+                                  file: artifact.path,
+                                  action: artifact.type as 'create' | 'update' | 'delete',
+                                  content: artifact.content,
+                                  description: artifact.metadata?.description || 'Generated by Studio Agent',
+                                  status: 'ready' as const,
+                                  createdAt: artifact.created_at
+                                }));
+                                if (onApplyPatches) {
+                                  onApplyPatches(patches);
+                                  toast({
+                                    title: "Changes Applied",
+                                    description: `Applied ${artifacts.length} file changes from Studio Agent`,
+                                  });
+                                }
+                              }}
+                              className="w-full"
+                            >
+                              Apply Changes ({artifacts.length} files)
+                            </Button>
                           )}
                         </CardContent>
                       </Card>
-                    ))}
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Start a Studio Agent session!</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Basic AI View
+                  <div>
+                    {plans.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">
+                        <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Ask me to help with your project!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {plans.map(plan => (
+                          <Card 
+                            key={plan.id} 
+                            className={`cursor-pointer transition-colors ${
+                              selectedPlan?.id === plan.id ? 'ring-2 ring-primary' : ''
+                            }`}
+                            onClick={() => setSelectedPlan(plan)}
+                          >
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm flex items-center justify-between">
+                                {plan.title}
+                                {getStatusBadge(plan.status)}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {plan.description}
+                              </p>
+                              <p className="text-xs">
+                                {plan.files.length} files • {plan.tasks.length} tasks
+                              </p>
+                              {plan.estimatedTime && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                  <Clock className="h-3 w-3" />
+                                  {plan.estimatedTime}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </ScrollArea>
@@ -167,18 +291,22 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
               />
               <Button 
                 onClick={handleAskAI}
-                disabled={!prompt.trim() || isGenerating || !projectId}
+                disabled={!prompt.trim() || (agentMode === 'studio' ? isProcessing : isGenerating) || !projectId}
                 className="w-full"
               >
-                {isGenerating ? (
+                {(agentMode === 'studio' ? isProcessing : isGenerating) ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Generating Plan...
+                    {agentMode === 'studio' ? 'Studio Agent Processing...' : 'Generating Plan...'}
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Ask AI
+                    {agentMode === 'studio' ? (
+                      <Zap className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    {agentMode === 'studio' ? 'Start Studio Agent' : 'Ask AI'}
                   </>
                 )}
               </Button>
