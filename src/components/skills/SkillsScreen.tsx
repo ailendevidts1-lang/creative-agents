@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code, Calendar, FolderOpen, Loader2, Zap } from "lucide-react";
+import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code, Calendar, FolderOpen, Loader2, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { TimerSkill } from "./TimerSkill";
@@ -9,11 +10,24 @@ import { NotesSkill } from "./NotesSkill";
 import { WeatherSkill } from "./WeatherSkill";
 import { SearchSkill } from "./SearchSkill";
 import { PromptToCodeSkill } from "./PromptToCodeSkill";
+import { GeneratedSkill } from "./GeneratedSkill";
 import { useSkillGeneration, ComingSoonSkill } from "@/hooks/useSkillGeneration";
 import { toast } from "sonner";
 
 interface SkillsScreenProps {
   onBack: () => void;
+}
+
+interface CoreSkill {
+  id: string;
+  icon: any;
+  name: string;
+  description: string;
+  color: string;
+  bgColor: string;
+  component: any;
+  isGenerated?: boolean;
+  generatedSkillData?: any;
 }
 
 export function SkillsScreen({ onBack }: SkillsScreenProps) {
@@ -22,8 +36,10 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
   const { 
     isGenerating, 
     generationProgress, 
+    generatedSkills,
     generateSkillFromPrompt, 
-    getDefaultComingSoonSkills 
+    getDefaultComingSoonSkills,
+    loadGeneratedSkills
   } = useSkillGeneration();
 
   useEffect(() => {
@@ -31,7 +47,7 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
     setComingSoonSkills(getDefaultComingSoonSkills());
   }, []);
 
-  const coreSkills = [
+  const coreSkills: CoreSkill[] = [
     {
       id: "prompt-to-code",
       icon: Code,
@@ -92,6 +108,37 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
     Search
   };
 
+  // Combine core skills with generated skills
+  const allCoreSkills: CoreSkill[] = [
+    ...coreSkills,
+    ...generatedSkills.map(skill => ({
+      id: skill.id,
+      icon: iconMap[skill.icon as keyof typeof iconMap] || Code,
+      name: skill.name,
+      description: skill.description,
+      color: skill.color,
+      bgColor: skill.bgColor,
+      component: GeneratedSkill,
+      isGenerated: true,
+      generatedSkillData: skill
+    }))
+  ];
+
+  const handleDeleteGeneratedSkill = (skillId: string) => {
+    try {
+      const existingSkills = localStorage.getItem('generated_skills');
+      if (existingSkills) {
+        const skills = JSON.parse(existingSkills);
+        const updatedSkills = skills.filter((s: any) => s.id !== skillId);
+        localStorage.setItem('generated_skills', JSON.stringify(updatedSkills));
+        loadGeneratedSkills();
+      }
+    } catch (error) {
+      console.error('Error deleting generated skill:', error);
+      toast.error('Failed to delete skill');
+    }
+  };
+
   const handleGenerateSkill = async (skill: ComingSoonSkill) => {
     if (isGenerating) {
       toast.error('Already generating a skill. Please wait...');
@@ -135,7 +182,7 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
   };
 
   if (activeSkill) {
-    const skill = coreSkills.find(s => s.id === activeSkill);
+    const skill = allCoreSkills.find(s => s.id === activeSkill);
     if (skill) {
       const SkillComponent = skill.component;
       return (
@@ -155,7 +202,14 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
 
           {/* Skill Content */}
           <div className="flex-1 p-6 overflow-y-auto">
-            <SkillComponent />
+            {skill.isGenerated ? (
+              <GeneratedSkill 
+                skill={skill.generatedSkillData} 
+                onDelete={handleDeleteGeneratedSkill}
+              />
+            ) : (
+              <SkillComponent />
+            )}
           </div>
         </div>
       );
@@ -193,7 +247,7 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
           
           <TabsContent value="core" className="space-y-4 mt-6">
             <div className="grid gap-4 md:grid-cols-2">
-              {coreSkills.map((skill) => (
+              {allCoreSkills.map((skill) => (
                 <Card 
                   key={skill.id} 
                   className="glass-panel p-6 hover:border-primary/20 transition-all duration-200 cursor-pointer"
@@ -204,7 +258,15 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
                       <skill.icon className={`w-6 h-6 ${skill.color}`} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-foreground mb-2">{skill.name}</h3>
+                      <h3 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                        {skill.name}
+                        {skill.isGenerated && (
+                          <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            AI
+                          </Badge>
+                        )}
+                      </h3>
                       <p className="text-sm text-muted-foreground">{skill.description}</p>
                     </div>
                   </div>

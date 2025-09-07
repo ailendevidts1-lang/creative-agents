@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -26,10 +26,27 @@ export interface GeneratedSkill {
 
 export function useSkillGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedSkills, setGeneratedSkills] = useState<GeneratedSkill[]>([]);
   const [generationProgress, setGenerationProgress] = useState<{
     step: string;
     progress: number;
   } | null>(null);
+
+  // Load generated skills on mount
+  useEffect(() => {
+    loadGeneratedSkills();
+  }, []);
+
+  const loadGeneratedSkills = () => {
+    try {
+      const stored = localStorage.getItem('generated_skills');
+      if (stored) {
+        setGeneratedSkills(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Error loading generated skills:', error);
+    }
+  };
 
   const generateSkillFromPrompt = async (skill: ComingSoonSkill): Promise<boolean> => {
     setIsGenerating(true);
@@ -177,7 +194,7 @@ export function ${componentName}Skill() {
         description: skill.description,
         icon: skill.icon,
         color: skill.color,
-        bg_color: skill.bgColor,
+        bgColor: skill.bgColor,
         component_name: skill.component,
         component_code: skill.code,
         created_at: skill.created_at
@@ -188,6 +205,9 @@ export function ${componentName}Skill() {
       const skills = existingSkills ? JSON.parse(existingSkills) : [];
       skills.push(skillsData);
       localStorage.setItem('generated_skills', JSON.stringify(skills));
+
+      // Update the local state
+      setGeneratedSkills(skills);
 
       console.log('Generated skill saved locally:', skillsData);
     } catch (error) {
@@ -247,7 +267,9 @@ export function ${componentName}Skill() {
   return {
     isGenerating,
     generationProgress,
+    generatedSkills,
     generateSkillFromPrompt,
-    getDefaultComingSoonSkills
+    getDefaultComingSoonSkills,
+    loadGeneratedSkills
   };
 }
