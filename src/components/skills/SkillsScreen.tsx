@@ -1,13 +1,16 @@
-import React, { useState } from "react";
-import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code, Calendar, FolderOpen, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { TimerSkill } from "./TimerSkill";
 import { NotesSkill } from "./NotesSkill";
 import { WeatherSkill } from "./WeatherSkill";
 import { SearchSkill } from "./SearchSkill";
 import { PromptToCodeSkill } from "./PromptToCodeSkill";
+import { useSkillGeneration, ComingSoonSkill } from "@/hooks/useSkillGeneration";
+import { toast } from "sonner";
 
 interface SkillsScreenProps {
   onBack: () => void;
@@ -15,6 +18,18 @@ interface SkillsScreenProps {
 
 export function SkillsScreen({ onBack }: SkillsScreenProps) {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
+  const [comingSoonSkills, setComingSoonSkills] = useState<ComingSoonSkill[]>([]);
+  const { 
+    isGenerating, 
+    generationProgress, 
+    generateSkillFromPrompt, 
+    getDefaultComingSoonSkills 
+  } = useSkillGeneration();
+
+  useEffect(() => {
+    // Initialize coming soon skills
+    setComingSoonSkills(getDefaultComingSoonSkills());
+  }, []);
 
   const coreSkills = [
     {
@@ -64,29 +79,60 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
     }
   ];
 
-  const comingSoonSkills = [
-    {
-      icon: Calculator,
-      name: "Conversions & Math",
-      description: "Unit conversions, calculations, and quick math",
-      color: "text-secondary",
-      bgColor: "bg-secondary/10"
-    },
-    {
-      icon: MessageSquare,
-      name: "Messages & Calls", 
-      description: "Send texts and make calls hands-free",
-      color: "text-accent",
-      bgColor: "bg-accent/10"
-    },
-    {
-      icon: Smartphone,
-      name: "Smart Home",
-      description: "Control HomeKit and Matter devices",
-      color: "text-primary",
-      bgColor: "bg-primary/10"
+  const iconMap = {
+    Calculator,
+    MessageSquare,
+    Smartphone,
+    Calendar,
+    FolderOpen,
+    Code,
+    Clock,
+    StickyNote,
+    Cloud,
+    Search
+  };
+
+  const handleGenerateSkill = async (skill: ComingSoonSkill) => {
+    if (isGenerating) {
+      toast.error('Already generating a skill. Please wait...');
+      return;
     }
-  ];
+
+    const success = await generateSkillFromPrompt(skill);
+    if (success) {
+      // Remove the skill from coming soon and add to core skills
+      setComingSoonSkills(prev => prev.filter(s => s.id !== skill.id));
+      
+      // Add new placeholder skills
+      const newSkills = generateNewComingSoonSkills();
+      setTimeout(() => {
+        setComingSoonSkills(prev => [...prev, ...newSkills]);
+      }, 2000);
+    }
+  };
+
+  const generateNewComingSoonSkills = (): ComingSoonSkill[] => {
+    const additionalSkills = [
+      {
+        id: 'email-manager',
+        name: 'Email Manager',
+        description: 'Compose, send, and organize emails',
+        icon: 'Mail',
+        color: 'text-primary',
+        bgColor: 'bg-primary/10'
+      },
+      {
+        id: 'password-manager',
+        name: 'Password Manager',
+        description: 'Secure password generation and storage',
+        icon: 'Key',
+        color: 'text-accent',
+        bgColor: 'bg-accent/10'
+      }
+    ];
+    
+    return additionalSkills.slice(0, 1); // Add one new skill at a time
+  };
 
   if (activeSkill) {
     const skill = coreSkills.find(s => s.id === activeSkill);
@@ -168,26 +214,84 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
           </TabsContent>
           
           <TabsContent value="coming-soon" className="space-y-4 mt-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              {comingSoonSkills.map((skill, index) => (
-                <Card key={index} className="glass-panel p-6 opacity-60">
-                  <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-2xl ${skill.bgColor}`}>
-                      <skill.icon className={`w-6 h-6 ${skill.color}`} />
+            {/* Generation Progress */}
+            {isGenerating && generationProgress && (
+              <Card className="glass-panel p-6 border-primary/20">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <span className="font-medium">Generating Skill...</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{generationProgress.step}</span>
+                      <span className="text-primary">{generationProgress.progress}%</span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground mb-2">{skill.name}</h3>
-                      <p className="text-sm text-muted-foreground">{skill.description}</p>
-                      <div className="mt-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-muted/20 text-muted-foreground">
-                          Coming Soon
-                        </span>
+                    <Progress value={generationProgress.progress} className="h-2" />
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {comingSoonSkills.map((skill, index) => {
+                const IconComponent = iconMap[skill.icon as keyof typeof iconMap] || Code;
+                return (
+                  <Card 
+                    key={skill.id} 
+                    className={`glass-panel p-6 transition-all duration-200 cursor-pointer group ${
+                      isGenerating 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:border-primary/30 hover:bg-primary/5'
+                    }`}
+                    onClick={() => !isGenerating && handleGenerateSkill(skill)}
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className={`p-3 rounded-2xl ${skill.bgColor} transition-all duration-200 ${
+                        !isGenerating && 'group-hover:scale-105'
+                      }`}>
+                        <IconComponent className={`w-6 h-6 ${skill.color}`} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                          {skill.name}
+                          {!isGenerating && (
+                            <Zap className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3">{skill.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                            {isGenerating ? 'Generating...' : 'Generate Now'}
+                          </span>
+                          {!isGenerating && (
+                            <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                              Click to generate
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
+
+            {comingSoonSkills.length === 0 && !isGenerating && (
+              <Card className="glass-panel p-8 text-center">
+                <div className="space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                    <Zap className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-2">All Skills Generated!</h3>
+                    <p className="text-sm text-muted-foreground">
+                      You've generated all available skills. New skills will be added over time.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
