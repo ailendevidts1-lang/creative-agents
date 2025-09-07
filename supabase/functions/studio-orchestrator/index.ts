@@ -66,7 +66,17 @@ serve(async (req) => {
 
     console.log('Created job:', job.id);
 
+    // Step 0: Index repository for semantic search
+    console.log('Step 0: Indexing repository...');
+    await supabase.functions.invoke('studio-indexer', {
+      body: {
+        projectId,
+        files: currentFiles || {}
+      }
+    });
+
     // Step 1: Context Building & Planning
+    console.log('Step 1: Planning...');
     const planningResponse = await supabase.functions.invoke('studio-planner', {
       body: {
         jobId: job.id,
@@ -91,6 +101,7 @@ serve(async (req) => {
       .eq('id', job.id);
 
     // Step 2: Start editing process
+    console.log('Step 2: Editing...');
     const editingResponse = await supabase.functions.invoke('studio-editor', {
       body: {
         jobId: job.id,
@@ -104,6 +115,39 @@ serve(async (req) => {
       throw new Error('Editing phase failed');
     }
 
+    // Step 3: Validation
+    console.log('Step 3: Validation...');
+    await supabase
+      .from('studio_jobs')
+      .update({ status: 'validating' })
+      .eq('id', job.id);
+
+    const validationResponse = await supabase.functions.invoke('studio-validator', {
+      body: {
+        jobId: job.id,
+        files: editingResponse.data.artifacts
+      }
+    });
+
+    // Step 4: Code Review
+    console.log('Step 4: Code Review...');
+    const reviewResponse = await supabase.functions.invoke('studio-reviewer', {
+      body: {
+        jobId: job.id,
+        tasks: editingResponse.data.tasks,
+        artifacts: editingResponse.data.artifacts
+      }
+    });
+
+    // Step 5: Preview Generation
+    console.log('Step 5: Creating Preview...');
+    const previewResponse = await supabase.functions.invoke('studio-preview', {
+      body: {
+        jobId: job.id,
+        artifacts: editingResponse.data.artifacts
+      }
+    });
+
     // Update job status to completed
     await supabase
       .from('studio_jobs')
@@ -116,7 +160,10 @@ serve(async (req) => {
       jobId: job.id,
       status: 'completed',
       tasks: editingResponse.data.tasks,
-      artifacts: editingResponse.data.artifacts
+      artifacts: editingResponse.data.artifacts,
+      validation: validationResponse.data,
+      review: reviewResponse.data,
+      preview: previewResponse.data
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -210,6 +210,50 @@ export function useStudioAgent() {
     setArtifacts([]);
   }, []);
 
+  const applyPatches = useCallback(async (jobId: string, artifacts: any[]) => {
+    try {
+      console.log('Applying patches for job:', jobId);
+      
+      const { data, error } = await supabase.functions.invoke('studio-apply-patches', {
+        body: {
+          jobId,
+          artifacts,
+          autoCommit: false,
+          createPR: false
+        }
+      });
+
+      if (error) {
+        console.error('Error applying patches:', error);
+        throw new Error(error.message || 'Failed to apply patches');
+      }
+
+      console.log('Patches applied successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('Failed to apply patches:', error);
+      throw error;
+    }
+  }, []);
+
+  const searchCode = useCallback(async (projectId: string, query: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('studio-search', {
+        body: { projectId, query, limit: 10 }
+      });
+
+      if (error) {
+        console.error('Error searching code:', error);
+        return [];
+      }
+
+      return data.results || [];
+    } catch (error) {
+      console.error('Failed to search code:', error);
+      return [];
+    }
+  }, []);
+
   return {
     isProcessing,
     currentJob,
@@ -220,6 +264,8 @@ export function useStudioAgent() {
     getTasksForJob,
     getArtifactsForJob,
     initializeMockData,
+    applyPatches,
+    searchCode,
     clearCurrentSession
   };
 }
