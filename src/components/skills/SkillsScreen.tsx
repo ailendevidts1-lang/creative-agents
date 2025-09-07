@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code, Calendar, FolderOpen, Loader2, Zap, Sparkles } from "lucide-react";
+import { ArrowLeft, Clock, StickyNote, Cloud, Search, Calculator, MessageSquare, Smartphone, Code, Calendar, FolderOpen, Loader2, Zap, Sparkles, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { NotesSkill } from "./NotesSkill";
 import { WeatherSkill } from "./WeatherSkill";
 import { SearchSkill } from "./SearchSkill";
 import { PromptToCodeSkill } from "./PromptToCodeSkill";
+import { VoiceCloningSkill } from "./VoiceCloningSkill";
 import { GeneratedSkill } from "./GeneratedSkill";
 import { useSkillGeneration, ComingSoonSkill } from "@/hooks/useSkillGeneration";
 import { toast } from "sonner";
@@ -92,6 +93,15 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
       color: "text-accent",
       bgColor: "bg-accent/10",
       component: SearchSkill
+    },
+    {
+      id: "voice-cloning",
+      icon: Volume2,
+      name: "🧩 Voice Analysis & Mimicry",
+      description: "Clone voices with high fidelity and manage multiple voice profiles",
+      color: "text-primary",
+      bgColor: "bg-gradient-to-br from-primary/20 to-accent/20",
+      component: VoiceCloningSkill
     }
   ];
 
@@ -105,7 +115,8 @@ export function SkillsScreen({ onBack }: SkillsScreenProps) {
     Clock,
     StickyNote,
     Cloud,
-    Search
+    Search,
+    Volume2
   };
 
   // Combine core skills with generated skills
