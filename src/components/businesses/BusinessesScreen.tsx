@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Plus, TrendingUp, DollarSign, Target, Calendar, Settings, Zap, Eye, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, DollarSign, Target, Calendar, Settings, Zap, Eye, BarChart3, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusinessService } from "@/hooks/useBusinessService";
@@ -55,6 +59,13 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [ideas, setIdeas] = useState<BusinessIdea[]>([]);
   const [plans, setPlans] = useState<BusinessPlan[]>([]);
+  const [showIdeaDialog, setShowIdeaDialog] = useState(false);
+  const [ideaPrompt, setIdeaPrompt] = useState("");
+  const [autoExecutePipeline, setAutoExecutePipeline] = useState(true);
+  const [pipelineProgress, setPipelineProgress] = useState<{
+    stage: 'idle' | 'generating' | 'planning' | 'executing' | 'complete';
+    message: string;
+  }>({ stage: 'idle', message: '' });
   const businessService = useBusinessService();
 
   useEffect(() => {
@@ -68,12 +79,67 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
     setPlans(data.plans);
   };
       
-  const generateNewIdea = async () => {
-    const newIdea = await businessService.generateBusinessIdea();
-    if (newIdea) {
+  const executeFullPipeline = async (prompt: string) => {
+    try {
+      setPipelineProgress({ stage: 'generating', message: 'Generating business idea...' });
+      
+      // Step 1: Generate business idea
+      const newIdea = await businessService.generateBusinessIdea(prompt);
+      if (!newIdea) throw new Error('Failed to generate idea');
+      
       setIdeas(prev => [newIdea, ...prev]);
-      toast.success("New business idea generated!");
+      toast.success("Business idea generated!");
+
+      if (!autoExecutePipeline) {
+        setPipelineProgress({ stage: 'idle', message: '' });
+        return;
+      }
+
+      // Step 2: Create business plan
+      setPipelineProgress({ stage: 'planning', message: 'Creating comprehensive business plan...' });
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Brief pause for UX
+      
+      const newPlan = await businessService.createBusinessPlan(newIdea.id);
+      if (!newPlan) throw new Error('Failed to create plan');
+      
+      setPlans(prev => [newPlan, ...prev]);
+      toast.success("Business plan created!");
+
+      // Step 3: Start business execution
+      setPipelineProgress({ stage: 'executing', message: 'Starting automated business execution...' });
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Brief pause for UX
+      
+      const newBusiness = await businessService.startBusiness(newPlan);
+      if (!newBusiness) throw new Error('Failed to start business');
+      
+      setBusinesses(prev => [newBusiness, ...prev]);
+      setPlans(prev => prev.filter(p => p.id !== newPlan.id));
+      
+      setPipelineProgress({ stage: 'complete', message: 'Business launched successfully!' });
+      setActiveTab("active");
+      toast.success("🎉 Full business pipeline completed! Your AI business is now running.");
+      
+      // Reset after showing completion
+      setTimeout(() => {
+        setPipelineProgress({ stage: 'idle', message: '' });
+      }, 3000);
+
+    } catch (error) {
+      console.error('Pipeline error:', error);
+      setPipelineProgress({ stage: 'idle', message: '' });
+      toast.error('Pipeline failed: ' + (error as Error).message);
     }
+  };
+
+  const generateNewIdea = async () => {
+    if (!ideaPrompt.trim()) {
+      toast.error("Please enter a business idea description");
+      return;
+    }
+
+    setShowIdeaDialog(false);
+    await executeFullPipeline(ideaPrompt);
+    setIdeaPrompt("");
   };
 
   const approveIdea = async (ideaId: string) => {
@@ -142,10 +208,59 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
               AI-powered business generation and management
             </p>
           </div>
-          <Button onClick={generateNewIdea} className="gap-2" disabled={businessService.loading}>
-            <Plus className="h-4 w-4" />
-            {businessService.loading ? "Generating..." : "New Idea"}
-          </Button>
+          <Dialog open={showIdeaDialog} onOpenChange={setShowIdeaDialog}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" disabled={businessService.loading || pipelineProgress.stage !== 'idle'}>
+                <Plus className="h-4 w-4" />
+                {pipelineProgress.stage !== 'idle' ? pipelineProgress.message : "New Business"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Create New Business</DialogTitle>
+                <DialogDescription>
+                  Describe your business idea and we'll generate a complete business plan and start execution automatically.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="idea-prompt">Business Idea Description</Label>
+                  <Textarea
+                    id="idea-prompt"
+                    placeholder="Describe your business idea... (e.g., 'A mobile app that helps people find local farmers markets and track seasonal produce availability')"
+                    value={ideaPrompt}
+                    onChange={(e) => setIdeaPrompt(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="auto-pipeline"
+                    checked={autoExecutePipeline}
+                    onCheckedChange={setAutoExecutePipeline}
+                  />
+                  <Label htmlFor="auto-pipeline" className="text-sm">
+                    Auto-execute full pipeline (Idea → Plan → Launch)
+                  </Label>
+                </div>
+                {autoExecutePipeline && (
+                  <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                    <strong>Full Pipeline Mode:</strong> We'll automatically generate your business idea, create a comprehensive plan, and start execution. This process takes 2-3 minutes.
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={generateNewIdea}
+                  disabled={!ideaPrompt.trim() || businessService.loading}
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {autoExecutePipeline ? "Launch Full Pipeline" : "Generate Idea"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Quick Stats */}
@@ -165,7 +280,44 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
         </div>
       </div>
 
-      {/* Content */}
+        {/* Pipeline Progress Indicator */}
+        {pipelineProgress.stage !== 'idle' && (
+          <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 rounded-lg p-6 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                {pipelineProgress.stage === 'complete' ? (
+                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center animate-pulse">
+                    <Settings className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-semibold text-foreground mb-2">{pipelineProgress.message}</div>
+                <Progress 
+                  value={
+                    pipelineProgress.stage === 'generating' ? 25 :
+                    pipelineProgress.stage === 'planning' ? 50 :
+                    pipelineProgress.stage === 'executing' ? 75 :
+                    pipelineProgress.stage === 'complete' ? 100 : 0
+                  } 
+                  className="h-3"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>Generate Idea</span>
+                  <span>Create Plan</span>
+                  <span>Launch Business</span>
+                  <span>Complete</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content */}
       <div className="p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">

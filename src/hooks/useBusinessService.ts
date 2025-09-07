@@ -55,7 +55,9 @@ export function useBusinessService() {
       const { data, error } = await supabase.functions.invoke('generate-business-idea', {
         body: {
           prompt: prompt || "Generate an innovative and profitable business idea",
-          userId: user.data.user.id
+          userId: user.data.user.id,
+          industry: "Technology",
+          budget: "5000"
         }
       });
 
@@ -175,17 +177,41 @@ export function useBusinessService() {
 
       if (businessError) throw businessError;
 
-      // Create automation pipeline
+      // Create automation pipeline and execute initial launch
       try {
-        await supabase.functions.invoke('create-automation-pipeline', {
-          body: {
-            businessId: businessData.id,
-            userId: user.data.user.id,
-            automationType: 'comprehensive'
-          }
-        });
+        const [pipelineData, launchData] = await Promise.all([
+          supabase.functions.invoke('create-automation-pipeline', {
+            body: {
+              businessId: businessData.id,
+              userId: user.data.user.id,
+              automationType: 'comprehensive'
+            }
+          }),
+          supabase.functions.invoke('execute-business-launch', {
+            body: {
+              businessPlan: plan,
+              userId: user.data.user.id
+            }
+          })
+        ]);
+
+        // Update business with launch results if available
+        if (launchData.data?.success && launchData.data?.execution) {
+          const execution = launchData.data.execution;
+            await supabase
+              .from('businesses')
+              .update({
+                progress: execution.execution_summary?.progress_percentage || 15,
+                next_tasks: execution.execution_summary?.next_priority_tasks || ["Set up accounts", "Create initial content", "Launch marketing"],
+                metadata: {
+                  launch_execution: execution,
+                  automated_at: new Date().toISOString()
+                }
+              })
+              .eq('id', businessData.id);
+        }
       } catch (pipelineError) {
-        console.warn('Pipeline creation warning:', pipelineError);
+        console.warn('Pipeline/Launch execution warning:', pipelineError);
         // Continue even if pipeline creation fails
       }
 
