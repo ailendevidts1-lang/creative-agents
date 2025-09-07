@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Zap, FileCheck, BarChart3, User } from "lucide-react";
+import { Home, Zap, Building2, FileCheck, BarChart3, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AppScreen } from "../MainLayout";
 
@@ -17,6 +17,7 @@ export function BottomNavigation({
   const navItems = [
     { id: "home" as AppScreen, icon: Home, label: "Home" },
     { id: "skills" as AppScreen, icon: Zap, label: "Skills" },
+    { id: "businesses" as AppScreen, icon: Building2, label: "Businesses" },
     { 
       id: "approvals" as AppScreen, 
       icon: FileCheck, 

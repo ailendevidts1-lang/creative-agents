@@ -7,9 +7,10 @@ import { SkillsScreen } from "./skills/SkillsScreen";
 import { ApprovalsScreen } from "./social/ApprovalsScreen";
 import { AnalyticsScreen } from "./analytics/AnalyticsScreen";
 import { ProfileScreen } from "./profile/ProfileScreen";
+import { BusinessesScreen } from "./businesses/BusinessesScreen";
 
 export type AppMode = "voice" | "manual";
-export type AppScreen = "home" | "skills" | "approvals" | "analytics" | "profile";
+export type AppScreen = "home" | "skills" | "businesses" | "approvals" | "analytics" | "profile";
 export type VoiceState = "idle" | "listening" | "capturing" | "transcribing" | "thinking" | "speaking" | "error";
 
 export interface AppState {
@@ -53,6 +54,8 @@ export function MainLayout() {
       switch (appState.screen) {
         case "skills":
           return <SkillsScreen onBack={() => switchScreen("home")} />;
+        case "businesses":
+          return <BusinessesScreen onBack={() => switchScreen("home")} />;
         case "approvals":
           return <ApprovalsScreen onBack={() => switchScreen("home")} />;
         case "analytics":
