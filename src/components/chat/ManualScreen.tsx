@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Brain, Search, Settings, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { skillsIntegrator } from "@/services/SkillsIntegrator";
 
 interface Message {
   id: string;
@@ -249,7 +250,28 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
         }
       }
 
-      // If no response from pipeline, use simple chat fallback
+      // If no response from pipeline, try direct skill execution
+      if (!responseGenerated) {
+        console.log('Attempting direct skill execution');
+        const skillResponse = await tryDirectSkillExecution(content.trim());
+        
+        if (skillResponse) {
+          const aiMessage: Message = {
+            id: `skill-${Date.now()}`,
+            role: "assistant",
+            content: skillResponse.message,
+            timestamp: new Date(),
+            type: "text",
+            metadata: {
+              toolResults: [skillResponse]
+            }
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          responseGenerated = true;
+        }
+      }
+
+      // If no response from skills, use simple chat fallback
       if (!responseGenerated) {
         console.log('Using fallback simple chat');
         const { data, error } = await supabase.functions.invoke('simple-chat', {
@@ -308,6 +330,154 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
       setIsProcessing(false);
     }
   }, [isProcessing, pipeline, messages]);
+
+  // Helper function to try direct skill execution for simple requests
+  const tryDirectSkillExecution = async (query: string): Promise<any | null> => {
+    const lowerQuery = query.toLowerCase();
+    
+    try {
+      // Timer patterns
+      if (lowerQuery.includes('timer') && (lowerQuery.includes('set') || lowerQuery.includes('create'))) {
+        const duration = extractDurationFromText(query);
+        const name = extractTimerNameFromText(query);
+        
+        const result = await skillsIntegrator.executeSkill('create_timer', {
+          name: name,
+          duration: duration
+        });
+        
+        if (result.success) {
+          return { ...result, type: 'timer' };
+        }
+      }
+      
+      // Note patterns
+      if ((lowerQuery.includes('note') || lowerQuery.includes('reminder')) && 
+          (lowerQuery.includes('create') || lowerQuery.includes('make') || lowerQuery.includes('add'))) {
+        const title = extractNoteTitleFromText(query);
+        
+        const result = await skillsIntegrator.executeSkill('create_note', {
+          title: title,
+          content: query
+        });
+        
+        if (result.success) {
+          return { ...result, type: 'note' };
+        }
+      }
+      
+      // Weather patterns
+      if (lowerQuery.includes('weather') || lowerQuery.includes('temperature')) {
+        const location = extractLocationFromText(query) || 'current';
+        
+        const result = await skillsIntegrator.executeSkill('get_weather', {
+          location: location
+        });
+        
+        if (result.success) {
+          return { ...result, type: 'weather' };
+        }
+      }
+      
+      // Search patterns  
+      if (lowerQuery.includes('search') || lowerQuery.includes('find') || lowerQuery.includes('look up')) {
+        const searchQuery = extractSearchQueryFromText(query);
+        
+        const result = await skillsIntegrator.executeSkill('web_search', {
+          query: searchQuery
+        });
+        
+        if (result.success) {
+          return { ...result, type: 'search' };
+        }
+      }
+      
+      // List patterns
+      if (lowerQuery.includes('list') && lowerQuery.includes('timer')) {
+        const result = await skillsIntegrator.executeSkill('list_timers', {});
+        if (result.success) {
+          return { ...result, type: 'timer_list' };
+        }
+      }
+      
+      if (lowerQuery.includes('list') && lowerQuery.includes('note')) {
+        const result = await skillsIntegrator.executeSkill('list_notes', { limit: 10 });
+        if (result.success) {
+          return { ...result, type: 'note_list' };
+        }
+      }
+      
+    } catch (error) {
+      console.error('Direct skill execution failed:', error);
+    }
+    
+    return null;
+  };
+
+  // Helper functions for text extraction
+  const extractDurationFromText = (text: string): number => {
+    const durationRegex = /(\d+)\s*(minute|minutes|min|second|seconds|sec|hour|hours|hr)/i;
+    const match = text.match(durationRegex);
+    
+    if (match) {
+      const value = parseInt(match[1]);
+      const unit = match[2].toLowerCase();
+      
+      if (unit.includes('second') || unit.includes('sec')) {
+        return value;
+      } else if (unit.includes('minute') || unit.includes('min')) {
+        return value * 60;
+      } else if (unit.includes('hour') || unit.includes('hr')) {
+        return value * 60 * 60;
+      }
+    }
+    
+    return 5 * 60; // Default 5 minutes
+  };
+
+  const extractTimerNameFromText = (text: string): string => {
+    const nameRegex = /timer\s+(?:for\s+)?(.+?)(?:\s+(?:for|in)\s+\d+|\s*$)/i;
+    const match = text.match(nameRegex);
+    
+    if (match && match[1] && !match[1].match(/\d+\s*(?:minute|min|second|sec|hour|hr)/i)) {
+      return match[1].trim();
+    }
+    
+    return 'Timer';
+  };
+
+  const extractNoteTitleFromText = (text: string): string => {
+    const titleRegex = /(?:note|reminder)\s+(?:about\s+)?(.+?)(?:\s*:|$)/i;
+    const match = text.match(titleRegex);
+    
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    
+    return `Note - ${new Date().toLocaleDateString()}`;
+  };
+
+  const extractLocationFromText = (text: string): string | null => {
+    const locationRegex = /(?:weather|temperature)\s+(?:in|for|at)\s+(.+?)(?:\s|$)/i;
+    const match = text.match(locationRegex);
+    
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    
+    return null;
+  };
+
+  const extractSearchQueryFromText = (text: string): string => {
+    const searchRegex = /(?:search|find|look\s+up)\s+(?:for\s+)?(.+)/i;
+    const match = text.match(searchRegex);
+    
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    
+    return text;
+  };
 
   // Format pipeline events for display
   const getPipelineStatusDisplay = () => {

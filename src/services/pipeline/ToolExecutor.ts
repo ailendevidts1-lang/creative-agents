@@ -4,6 +4,7 @@ import { ExecutionQueue, QueuedExecution, ExecutionQueueConfig } from './Executi
 import { ExecutionValidator, ValidationResult } from './ExecutionValidator';
 import { ExecutionSummarizer, ExecutionSummary } from './ExecutionSummarizer';
 import { ExecutionStateStore, ExecutionSession, StateStoreConfig } from './ExecutionStateStore';
+import { skillsIntegrator } from '@/services/SkillsIntegrator';
 
 export class ToolExecutor {
   private executionQueue: ExecutionQueue;
@@ -194,45 +195,105 @@ export class ToolExecutor {
   private async executeSkill(step: PlanStep): Promise<ToolResult> {
     console.log('Executing skill:', step.action);
 
-    switch (step.action) {
-      case 'create_timer':
-        return await this.createTimerWithValidation(step.parameters);
+    try {
+      // Use the integrated skills system
+      const result = await skillsIntegrator.executeSkill(step.action, step.parameters);
       
-      case 'create_note':
-        return await this.createNoteWithValidation(step.parameters);
-
-      case 'list_timers':
-        return await this.listTimers();
+      if (result.success) {
+        return {
+          success: true,
+          data: result.data,
+          metadata: { 
+            action: step.action, 
+            type: 'skill',
+            message: result.message
+          }
+        };
+      } else {
+        throw new Error(result.error || 'Skill execution failed');
+      }
+    } catch (error) {
+      // Fallback to legacy implementations for compatibility
+      switch (step.action) {
+        case 'create_timer':
+          return await this.createTimerWithValidation(step.parameters);
         
-      case 'list_notes':
-        return await this.listNotes();
-      
-      default:
-        throw new Error(`Unknown skill action: ${step.action}`);
+        case 'create_note':
+          return await this.createNoteWithValidation(step.parameters);
+
+        case 'list_timers':
+          return await this.listTimers();
+          
+        case 'list_notes':
+          return await this.listNotes();
+        
+        default:
+          throw new Error(`Unknown skill action: ${step.action}`);
+      }
     }
   }
 
   private async executeAPI(step: PlanStep): Promise<ToolResult> {
     console.log('Executing API call:', step.action);
 
-    switch (step.action) {
-      case 'get_weather':
-        return await this.getWeatherWithValidation(step.parameters);
+    try {
+      // Use the integrated skills system for API calls too
+      const result = await skillsIntegrator.executeSkill(step.action, step.parameters);
       
-      default:
-        throw new Error(`Unknown API action: ${step.action}`);
+      if (result.success) {
+        return {
+          success: true,
+          data: result.data,
+          metadata: { 
+            action: step.action, 
+            type: 'api',
+            message: result.message
+          }
+        };
+      } else {
+        throw new Error(result.error || 'API execution failed');
+      }
+    } catch (error) {
+      // Fallback to legacy implementations
+      switch (step.action) {
+        case 'get_weather':
+          return await this.getWeatherWithValidation(step.parameters);
+        
+        default:
+          throw new Error(`Unknown API action: ${step.action}`);
+      }
     }
   }
 
   private async executeSearch(step: PlanStep): Promise<ToolResult> {
     console.log('Executing search:', step.action);
 
-    switch (step.action) {
-      case 'web_search':
-        return await this.performWebSearchWithValidation(step.parameters);
+    try {
+      // Use the integrated skills system for search operations
+      const result = await skillsIntegrator.executeSkill(step.action, step.parameters);
       
-      default:
-        throw new Error(`Unknown search action: ${step.action}`);
+      if (result.success) {
+        return {
+          success: true,
+          data: result.data,
+          metadata: { 
+            action: step.action, 
+            type: 'search',
+            message: result.message
+          }
+        };
+      } else {
+        throw new Error(result.error || 'Search execution failed');
+      }
+    } catch (error) {
+      // Fallback to legacy implementations
+      switch (step.action) {
+        case 'web_search':
+          return await this.performWebSearchWithValidation(step.parameters);
+        
+        default:
+          throw new Error(`Unknown search action: ${step.action}`);
+      }
     }
   }
 

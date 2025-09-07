@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Plan, PlanStep, NLUResult, ContextEntry } from './types';
+import { getSkillCapabilities } from './SkillToolDefinitions';
 
 export class PlannerService {
   private generateId(): string {
@@ -8,13 +9,14 @@ export class PlannerService {
 
   async createPlan(query: string, nluResult: NLUResult, context: ContextEntry[]): Promise<Plan> {
     try {
-      // Call our edge function for AI planning
+      // Call our edge function for AI planning with skill capabilities
       const { data, error } = await supabase.functions.invoke('create-plan', {
         body: {
           query,
           intent: nluResult.intent,
           entities: nluResult.entities,
-          context: context.slice(-5) // Last 5 context entries
+          context: context.slice(-5), // Last 5 context entries
+          availableSkills: getSkillCapabilities() // Include available skills
         }
       });
 
@@ -38,8 +40,10 @@ export class PlannerService {
   private createFallbackPlan(query: string, nluResult: NLUResult): Plan {
     const steps: PlanStep[] = [];
 
+    // Enhanced intent matching for all integrated skills
     switch (nluResult.intent) {
       case 'timer':
+      case 'create_timer':
         steps.push({
           id: this.generateId(),
           type: 'skill',
@@ -52,7 +56,18 @@ export class PlannerService {
         });
         break;
 
+      case 'list_timers':
+        steps.push({
+          id: this.generateId(),
+          type: 'skill',
+          action: 'list_timers',
+          parameters: {},
+          dependencies: []
+        });
+        break;
+
       case 'notes':
+      case 'create_note':
         steps.push({
           id: this.generateId(),
           type: 'skill',
@@ -65,10 +80,21 @@ export class PlannerService {
         });
         break;
 
-      case 'weather':
+      case 'list_notes':
         steps.push({
           id: this.generateId(),
-          type: 'api',
+          type: 'skill',
+          action: 'list_notes',
+          parameters: { limit: 10 },
+          dependencies: []
+        });
+        break;
+
+      case 'weather':
+      case 'get_weather':
+        steps.push({
+          id: this.generateId(),
+          type: 'skill',
           action: 'get_weather',
           parameters: {
             location: nluResult.entities.location || 'current'
@@ -78,12 +104,42 @@ export class PlannerService {
         break;
 
       case 'search':
+      case 'web_search':
         steps.push({
           id: this.generateId(),
-          type: 'search',
+          type: 'skill',
           action: 'web_search',
           parameters: {
             query: this.extractSearchQuery(query)
+          },
+          dependencies: []
+        });
+        break;
+
+      case 'code':
+      case 'generate_code':
+        steps.push({
+          id: this.generateId(),
+          type: 'skill',
+          action: 'generate_code',
+          parameters: {
+            description: query,
+            language: nluResult.entities.language || 'javascript'
+          },
+          dependencies: []
+        });
+        break;
+
+      case 'project':
+      case 'generate_project':
+        steps.push({
+          id: this.generateId(),
+          type: 'skill',
+          action: 'generate_project',
+          parameters: {
+            prompt: query,
+            language: nluResult.entities.language || 'javascript',
+            framework: nluResult.entities.framework
           },
           dependencies: []
         });
