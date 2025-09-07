@@ -91,6 +91,11 @@ export default function Home() {
     }
   };
 
+  const handleEditProject = (project: ProjectPlan) => {
+    // Navigate to studio page
+    window.location.href = `/studio/${project.id}`;
+  };
+
   const getCurrentStepIndex = () => {
     if (!session) return -1;
     
@@ -349,6 +354,7 @@ export default function Home() {
                     onView={setSelectedProject}
                     onDelete={deleteProject}
                     onGenerateCode={handleGenerateCode}
+                    onEdit={handleEditProject}
                   />
                 ))}
               </div>

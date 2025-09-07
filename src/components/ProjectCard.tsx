@@ -3,16 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProjectPlan } from '@/agents/types';
-import { ExternalLink, Code, Trash2, Calendar, Cpu } from 'lucide-react';
+import { ExternalLink, Code, Trash2, Calendar, Cpu, Edit } from 'lucide-react';
 
 interface ProjectCardProps {
   project: ProjectPlan;
   onView: (project: ProjectPlan) => void;
   onDelete: (id: string) => void;
   onGenerateCode?: (project: ProjectPlan) => void;
+  onEdit?: (project: ProjectPlan) => void;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDelete, onGenerateCode }) => {
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDelete, onGenerateCode, onEdit }) => {
   const getProjectTypeIcon = (type: string) => {
     switch (type) {
       case 'web-app': return '🌐';
@@ -102,15 +103,28 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onView, onDel
             <ExternalLink className="h-4 w-4 mr-2" />
             View Details
           </Button>
+          {onEdit && (
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => onEdit(project)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Code
+            </Button>
+          )}
+        </div>
+        
+        {project.metadata?.codeGenerated && (
           <Button 
             variant="outline" 
-            className="flex-1"
+            className="w-full mt-2"
             onClick={() => onGenerateCode?.(project)}
           >
             <Code className="h-4 w-4 mr-2" />
-            {project.metadata?.codeGenerated ? 'Download Code' : 'Generate Code'}
+            Download Code
           </Button>
-        </div>
+        )}
         
         {project.metadata?.deploymentUrl && (
           <div className="mt-2 p-2 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">

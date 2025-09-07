@@ -175,6 +175,7 @@ export function ProjectsPage({ onNavigateToStudio }: ProjectsPageProps) {
         project={selectedProject}
         isOpen={!!selectedProject}
         onClose={() => setSelectedProject(null)}
+        onEdit={(project) => navigate(`/studio/${project.id}`)}
       />
     </div>
   );

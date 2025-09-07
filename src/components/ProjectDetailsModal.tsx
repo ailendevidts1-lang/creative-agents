@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AIProject } from "@/types/project";
-import { X, Code, Zap, Settings, Clock, Target } from "lucide-react";
+import { X, Code, Zap, Settings, Clock, Target, Edit } from "lucide-react";
 
 interface ProjectDetailsModalProps {
   project: AIProject | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: (project: AIProject) => void;
 }
 
-export function ProjectDetailsModal({ project, isOpen, onClose }: ProjectDetailsModalProps) {
+export function ProjectDetailsModal({ project, isOpen, onClose, onEdit }: ProjectDetailsModalProps) {
   if (!project) return null;
 
   return (
@@ -176,6 +177,23 @@ export function ProjectDetailsModal({ project, isOpen, onClose }: ProjectDetails
               </div>
             </CardContent>
           </Card>
+
+          {/* Action Buttons */}
+          {onEdit && (
+            <div className="flex gap-3 pt-4 border-t">
+              <Button 
+                onClick={() => onEdit(project)}
+                className="flex-1 flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit in Studio
+              </Button>
+              <Button variant="outline" className="flex-1 flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                Generate Code
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
