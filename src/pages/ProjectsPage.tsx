@@ -6,6 +6,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { AIProject } from "@/types/project";
 import { ProjectDetailsModal } from "@/components/ProjectDetailsModal";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { FolderOpen, Plus, Settings, Play, Eye, Trash2, Loader2 } from "lucide-react";
 
 interface ProjectsPageProps {
@@ -13,6 +14,7 @@ interface ProjectsPageProps {
 }
 
 export function ProjectsPage({ onNavigateToStudio }: ProjectsPageProps) {
+  const navigate = useNavigate();
   const { projects, isLoading, deleteProject } = useProjects();
   const [selectedProject, setSelectedProject] = useState<AIProject | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
@@ -129,7 +131,7 @@ export function ProjectsPage({ onNavigateToStudio }: ProjectsPageProps) {
                     <Button 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => onNavigateToStudio?.(project.id)}
+                      onClick={() => navigate(`/studio/${project.id}`)}
                     >
                       <Play className="w-4 h-4 mr-2" />
                       Open Studio

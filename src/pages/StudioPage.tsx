@@ -1,450 +1,232 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useProjects } from "@/hooks/useProjects";
-import { 
-  ArrowLeft,
-  FolderOpen,
-  File,
-  ChevronRight,
-  ChevronDown,
-  Play,
-  Bug,
-  Save,
-  Code,
-  Zap,
-  Bot,
-  GitBranch,
-  Settings
-} from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Play, GitBranch, Download, Settings } from 'lucide-react';
+import { FileExplorer } from '@/components/studio/FileExplorer';
+import { CodeEditor } from '@/components/studio/CodeEditor';
+import { AISidecar } from '@/components/studio/AISidecar';
+import { GitPanel } from '@/components/studio/GitPanel';
+import { TerminalPanel } from '@/components/studio/TerminalPanel';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface StudioPageProps {
-  projectId: string;
-  onNavigateBack: () => void;
-}
-
-interface FileNode {
+interface ProjectFile {
+  id: string;
   name: string;
-  type: "file" | "folder";
-  children?: FileNode[];
+  path: string;
+  type: 'file' | 'folder';
   content?: string;
+  children?: ProjectFile[];
 }
 
 interface EditorTab {
   id: string;
   name: string;
+  path: string;
   content: string;
   modified: boolean;
 }
 
-interface ProposedChange {
-  file: string;
-  type: "edit" | "create" | "delete";
-  content?: string;
-  diff?: string;
-  selected: boolean;
-}
-
-export function StudioPage({ projectId, onNavigateBack }: StudioPageProps) {
-  const { projects } = useProjects();
-  const [project, setProject] = useState(() => {
-    return projects.find(p => p.id === projectId);
-  });
-  const [fileTree, setFileTree] = useState<FileNode[]>([]);
+export function StudioPage() {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const [project, setProject] = useState<any>(null);
+  const [files, setFiles] = useState<ProjectFile[]>([]);
   const [openTabs, setOpenTabs] = useState<EditorTab[]>([]);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [instruction, setInstruction] = useState("");
-  const [scope, setScope] = useState<"open-files" | "all-files">("open-files");
-  const [proposedChanges, setProposedChanges] = useState<ProposedChange[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["src"]));
+  const [activeTab, setActiveTab] = useState<string>('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentBranch, setCurrentBranch] = useState('main');
 
-  // Mock file tree structure
   useEffect(() => {
-    const mockFileTree: FileNode[] = [
+    // Load project and files
+    loadProject();
+    loadFiles();
+  }, [projectId]);
+
+  const loadProject = async () => {
+    // Mock project data - in real implementation, fetch from API
+    setProject({
+      id: projectId,
+      name: 'My AI Project',
+      description: 'AI-generated project',
+      type: 'web-app'
+    });
+  };
+
+  const loadFiles = () => {
+    // Mock file structure
+    const mockFiles: ProjectFile[] = [
       {
-        name: "src",
-        type: "folder",
+        id: '1',
+        name: 'src',
+        path: 'src',
+        type: 'folder',
         children: [
-          { name: "App.tsx", type: "file", content: "import React from 'react';\n\nfunction App() {\n  return <div>Hello World</div>;\n}\n\nexport default App;" },
-          { name: "index.tsx", type: "file", content: "import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\n\nReactDOM.createRoot(document.getElementById('root')!).render(<App />);" },
           {
-            name: "components",
-            type: "folder",
+            id: '2',
+            name: 'components',
+            path: 'src/components',
+            type: 'folder',
             children: [
-              { name: "Button.tsx", type: "file", content: "import React from 'react';\n\ninterface ButtonProps {\n  children: React.ReactNode;\n  onClick?: () => void;\n}\n\nexport function Button({ children, onClick }: ButtonProps) {\n  return <button onClick={onClick}>{children}</button>;\n}" },
+              {
+                id: '3',
+                name: 'App.tsx',
+                path: 'src/components/App.tsx',
+                type: 'file',
+                content: 'import React from "react";\n\nfunction App() {\n  return (\n    <div className="App">\n      <h1>Hello World</h1>\n    </div>\n  );\n}\n\nexport default App;'
+              }
             ]
           }
         ]
       },
-      { name: "package.json", type: "file", content: "{\n  \"name\": \"" + (project?.name || "project") + "\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^18.0.0\",\n    \"react-dom\": \"^18.0.0\"\n  }\n}" },
-      { name: "README.md", type: "file", content: "# " + (project?.name || "Project") + "\n\n" + (project?.description || "Generated by AI Hyper-Engine") }
-    ];
-    setFileTree(mockFileTree);
-  }, [project]);
-
-  const toggleFolder = (path: string) => {
-    setExpandedFolders(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(path)) {
-        newSet.delete(path);
-      } else {
-        newSet.add(path);
+      {
+        id: '4',
+        name: 'package.json',
+        path: 'package.json',
+        type: 'file',
+        content: '{\n  "name": "ai-project",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0"\n  }\n}'
       }
-      return newSet;
-    });
+    ];
+    setFiles(mockFiles);
   };
 
-  const openFile = (file: FileNode, path: string) => {
-    if (file.type === "file" && file.content) {
-      const existingTab = openTabs.find(tab => tab.id === path);
-      if (!existingTab) {
-        const newTab: EditorTab = {
-          id: path,
-          name: file.name,
-          content: file.content,
-          modified: false
-        };
-        setOpenTabs(prev => [...prev, newTab]);
-      }
-      setActiveTab(path);
+  const openFile = (file: ProjectFile) => {
+    if (file.type === 'folder') return;
+    
+    const existingTab = openTabs.find(tab => tab.path === file.path);
+    if (existingTab) {
+      setActiveTab(existingTab.id);
+      return;
     }
+
+    const newTab: EditorTab = {
+      id: file.id,
+      name: file.name,
+      path: file.path,
+      content: file.content || '',
+      modified: false
+    };
+
+    setOpenTabs(prev => [...prev, newTab]);
+    setActiveTab(newTab.id);
   };
 
   const closeTab = (tabId: string) => {
     setOpenTabs(prev => prev.filter(tab => tab.id !== tabId));
-    if (activeTab === tabId) {
-      const remainingTabs = openTabs.filter(tab => tab.id !== tabId);
-      setActiveTab(remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1].id : null);
+    if (activeTab === tabId && openTabs.length > 1) {
+      const index = openTabs.findIndex(tab => tab.id === tabId);
+      const nextTab = openTabs[index + 1] || openTabs[index - 1];
+      setActiveTab(nextTab?.id || '');
     }
   };
 
   const updateTabContent = (tabId: string, content: string) => {
-    setOpenTabs(prev => prev.map(tab => 
-      tab.id === tabId 
-        ? { ...tab, content, modified: true }
-        : tab
-    ));
+    setOpenTabs(prev => 
+      prev.map(tab => 
+        tab.id === tabId 
+          ? { ...tab, content, modified: true }
+          : tab
+      )
+    );
   };
 
-  const generateEdits = async () => {
-    if (!instruction.trim()) return;
-    
-    setIsGenerating(true);
-    
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock proposed changes
-    const mockChanges: ProposedChange[] = [
-      {
-        file: "src/App.tsx",
-        type: "edit",
-        content: "import React from 'react';\nimport { Button } from './components/Button';\n\nfunction App() {\n  return (\n    <div>\n      <h1>Enhanced App</h1>\n      <Button onClick={() => alert('Hello!')}>Click me</Button>\n    </div>\n  );\n}\n\nexport default App;",
-        diff: "- return <div>Hello World</div>;\n+ return (\n+   <div>\n+     <h1>Enhanced App</h1>\n+     <Button onClick={() => alert('Hello!')}>Click me</Button>\n+   </div>\n+ );",
-        selected: true
-      },
-      {
-        file: "src/components/Header.tsx",
-        type: "create",
-        content: "import React from 'react';\n\nexport function Header() {\n  return <header><h1>My App</h1></header>;\n}",
-        selected: true
-      }
-    ];
-    
-    setProposedChanges(mockChanges);
-    setIsGenerating(false);
+  const runProject = () => {
+    setIsRunning(true);
+    // Simulate build process
+    setTimeout(() => setIsRunning(false), 3000);
   };
-
-  const applyChanges = () => {
-    const selectedChanges = proposedChanges.filter(change => change.selected);
-    
-    selectedChanges.forEach(change => {
-      if (change.type === "edit" && change.content) {
-        // Update existing tab if open
-        const existingTab = openTabs.find(tab => tab.id === change.file);
-        if (existingTab) {
-          updateTabContent(change.file, change.content);
-        }
-      }
-      // Handle create/delete operations
-    });
-    
-    setProposedChanges([]);
-  };
-
-  const renderFileTree = (nodes: FileNode[], path = "") => {
-    return nodes.map((node) => {
-      const fullPath = path ? `${path}/${node.name}` : node.name;
-      const isExpanded = expandedFolders.has(fullPath);
-      
-      return (
-        <div key={fullPath} className="select-none">
-          <div 
-            className="flex items-center gap-1 px-2 py-1 hover:bg-accent/50 cursor-pointer text-sm"
-            onClick={() => node.type === "folder" ? toggleFolder(fullPath) : openFile(node, fullPath)}
-          >
-            {node.type === "folder" ? (
-              <>
-                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                <FolderOpen className="w-4 h-4 text-blue-400" />
-              </>
-            ) : (
-              <>
-                <div className="w-4" />
-                <File className="w-4 h-4 text-muted-foreground" />
-              </>
-            )}
-            <span className={`${activeTab === fullPath ? 'text-primary font-medium' : ''}`}>
-              {node.name}
-            </span>
-          </div>
-          {node.type === "folder" && isExpanded && node.children && (
-            <div className="ml-4">
-              {renderFileTree(node.children, fullPath)}
-            </div>
-          )}
-        </div>
-      );
-    });
-  };
-
-  const activeTabContent = openTabs.find(tab => tab.id === activeTab);
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-border bg-card">
-        <Button variant="ghost" size="sm" onClick={onNavigateBack}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+      {/* Top Bar */}
+      <div className="h-12 border-b flex items-center px-4 gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/projects')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
+        
         <div className="flex items-center gap-2">
-          <Code className="w-5 h-5 text-primary" />
-          <h1 className="text-lg font-semibold">{project?.name || "Studio"}</h1>
+          <h1 className="font-semibold">{project?.name}</h1>
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4" />
+            {currentBranch}
+          </Button>
         </div>
-        <div className="flex-1" />
-        <Badge variant="secondary">
-          <Bot className="w-3 h-3 mr-1" />
-          AI Studio
-        </Badge>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runProject}
+            disabled={isRunning}
+            className="flex items-center gap-2"
+          >
+            <Play className="h-4 w-4" />
+            {isRunning ? 'Running...' : 'Run'}
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Explorer */}
-        <div className="w-64 border-r border-border bg-card/50">
-          <div className="p-3 border-b border-border">
-            <h3 className="font-medium text-sm flex items-center gap-2">
-              <FolderOpen className="w-4 h-4" />
-              Explorer
-            </h3>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-2">
-              {renderFileTree(fileTree)}
-            </div>
-          </ScrollArea>
-        </div>
+      <div className="flex-1 flex">
+        <ResizablePanelGroup direction="horizontal">
+          {/* Left Panel */}
+          <ResizablePanel defaultSize={20} minSize={15}>
+            <Tabs defaultValue="files" className="h-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="files">Files</TabsTrigger>
+                <TabsTrigger value="git">Git</TabsTrigger>
+              </TabsList>
+              <TabsContent value="files" className="h-full">
+                <FileExplorer files={files} onFileOpen={openFile} />
+              </TabsContent>
+              <TabsContent value="git" className="h-full">
+                <GitPanel />
+              </TabsContent>
+            </Tabs>
+          </ResizablePanel>
 
-        {/* Editor */}
-        <div className="flex-1 flex flex-col">
-          {/* Tabs */}
-          {openTabs.length > 0 && (
-            <div className="flex items-center bg-card border-b border-border">
-              {openTabs.map((tab) => (
-                <div
-                  key={tab.id}
-                  className={`flex items-center gap-2 px-4 py-2 border-r border-border cursor-pointer hover:bg-accent/50 ${
-                    activeTab === tab.id ? 'bg-background' : 'bg-card'
-                  }`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <File className="w-3 h-3" />
-                  <span className="text-sm">{tab.name}</span>
-                  {tab.modified && <div className="w-1 h-1 rounded-full bg-primary" />}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-4 h-4 p-0 ml-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeTab(tab.id);
-                    }}
-                  >
-                    ×
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+          <ResizableHandle />
 
-          {/* Editor Content */}
-          <div className="flex-1 p-4">
-            {activeTabContent ? (
-              <Textarea
-                value={activeTabContent.content}
-                onChange={(e) => updateTabContent(activeTab!, e.target.value)}
-                className="h-full font-mono text-sm resize-none"
-                placeholder="Start typing..."
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <Code className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Select a file to start editing</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+          {/* Center Panel */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={70} minSize={40}>
+                <CodeEditor
+                  tabs={openTabs}
+                  activeTab={activeTab}
+                  onTabClose={closeTab}
+                  onTabSelect={setActiveTab}
+                  onContentChange={updateTabContent}
+                />
+              </ResizablePanel>
+              
+              <ResizableHandle />
+              
+              <ResizablePanel defaultSize={30} minSize={20}>
+                <TerminalPanel />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
 
-        {/* Agent Panel */}
-        <div className="w-80 border-l border-border bg-card/50 flex flex-col">
-          <div className="p-3 border-b border-border">
-            <h3 className="font-medium text-sm flex items-center gap-2">
-              <Bot className="w-4 h-4" />
-              AI Agent
-            </h3>
-          </div>
+          <ResizableHandle />
 
-          <div className="flex-1 p-4 space-y-4">
-            {/* Instruction Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Instructions</label>
-              <Textarea
-                placeholder="Add Stripe checkout and update tests..."
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                rows={3}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Scope Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Scope</label>
-              <Select value={scope} onValueChange={(value) => setScope(value as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open-files">Open files only</SelectItem>
-                  <SelectItem value="all-files">All files</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2">
-              <Button 
-                onClick={generateEdits} 
-                disabled={!instruction.trim() || isGenerating}
-                className="w-full"
-                size="sm"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                {isGenerating ? "Generating..." : "Generate Edits"}
-              </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm">
-                  <Play className="w-4 h-4 mr-1" />
-                  Run
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Bug className="w-4 h-4 mr-1" />
-                  Debug
-                </Button>
-              </div>
-              <Button variant="outline" size="sm" className="w-full">
-                <Save className="w-4 h-4 mr-2" />
-                Save All
-              </Button>
-            </div>
-
-            {/* Proposed Changes */}
-            {proposedChanges.length > 0 && (
-              <div className="space-y-3">
-                <Separator />
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-sm">Proposed Changes</h4>
-                    <Badge variant="secondary">{proposedChanges.length}</Badge>
-                  </div>
-                  
-                  <ScrollArea className="h-40">
-                    <div className="space-y-2">
-                      {proposedChanges.map((change, index) => (
-                        <Card key={index} className="p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Checkbox
-                              checked={change.selected}
-                              onCheckedChange={(checked) => {
-                                setProposedChanges(prev => prev.map((c, i) => 
-                                  i === index ? { ...c, selected: !!checked } : c
-                                ));
-                              }}
-                            />
-                            <Badge variant={change.type === "create" ? "default" : change.type === "delete" ? "destructive" : "secondary"}>
-                              {change.type}
-                            </Badge>
-                            <span className="text-xs font-mono">{change.file}</span>
-                          </div>
-                          {change.diff && (
-                            <pre className="text-xs bg-muted p-2 rounded overflow-auto">
-                              {change.diff}
-                            </pre>
-                          )}
-                        </Card>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={applyChanges}
-                      size="sm"
-                      className="flex-1"
-                      disabled={!proposedChanges.some(c => c.selected)}
-                    >
-                      <GitBranch className="w-4 h-4 mr-1" />
-                      Apply Selected
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setProposedChanges([])}
-                    >
-                      Discard
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Status Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-card border-t border-border text-xs text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <span>Project: {projectId}</span>
-          {activeTabContent && <span>File: {activeTabContent.name}</span>}
-        </div>
-        <div className="flex items-center gap-4">
-          <span>Unsaved: {openTabs.filter(tab => tab.modified).length}</span>
-          <div className="flex items-center gap-1">
-            <Settings className="w-3 h-3" />
-            <span>Studio</span>
-          </div>
-        </div>
+          {/* Right Panel - AI Sidecar */}
+          <ResizablePanel defaultSize={30} minSize={25}>
+            <AISidecar projectId={projectId} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
