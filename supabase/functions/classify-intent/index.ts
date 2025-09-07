@@ -6,154 +6,126 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
-    const { text, model = 'gpt-4o-mini' } = body || {};
-    
-    console.log('Received classify-intent request:', { text, model });
-    
-    if (!text || typeof text !== 'string' || !text.trim()) {
-      console.error('Invalid text input:', text);
-      throw new Error('Valid text input is required for classification');
+    const { text, voiceState } = await req.json();
+
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Classify the following user input into one of these categories and extract relevant entities:
+    // Enhanced intent classification with skill-aware prompting
+    const systemPrompt = `You are an intent classification AI that analyzes user input and determines the appropriate action.
 
-Categories:
-- timer: Setting timers, alarms, reminders
-- notes: Creating, editing, or managing notes
-- weather: Getting weather information
-- search: Searching for information or asking questions
-- development: Coding, debugging, project-related questions
-- general: Everything else
+Available Skills:
+- create_timer: For setting timers/alarms (e.g., "set 5 minute timer", "timer for cooking")
+- list_timers: For viewing active timers (e.g., "show my timers", "what timers are running")
+- create_note: For creating notes/reminders (e.g., "take a note", "remind me about meeting")
+- list_notes: For viewing notes (e.g., "show my notes", "what notes do I have")
+- get_weather: For weather information (e.g., "what's the weather", "temperature outside")
+- web_search: For searching information (e.g., "search for restaurants", "look up AI news")
+- generate_code: For code generation (e.g., "write a function", "create code for")
+- generate_project: For project generation (e.g., "create an app", "build a website")
 
-Text to classify: "${text.trim()}"
+Voice States Context:
+- listening: User is speaking
+- thinking: Processing user input
+- speaking: AI is responding
+- idle: Ready for input
 
-Respond with JSON in this format:
+Respond with JSON:
 {
-  "intent": "category_name",
+  "intent": "skill_name_or_general",
   "entities": {
-    "duration": "5 minutes" (for timers),
-    "location": "New York" (for weather),
-    "content": "note content" (for notes),
-    "query": "search terms" (for search)
+    "duration": number_in_seconds,
+    "name": "extracted_name",
+    "location": "extracted_location",
+    "query": "search_query",
+    "content": "note_content"
   },
-  "confidence": 0.95,
-  "needsPlanning": true/false,
-  "isQuestion": true/false
-}`;
+  "confidence": 0.0-1.0,
+  "needsPlanning": boolean,
+  "isQuestion": boolean
+}
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+Examples:
+- "Set a 5 minute timer for cooking" → intent: "create_timer", entities: {duration: 300, name: "cooking"}
+- "What's the weather in Paris" → intent: "get_weather", entities: {location: "Paris"}
+- "Search for pizza places" → intent: "web_search", entities: {query: "pizza places"}
+- "Take a note about tomorrow's meeting" → intent: "create_note", entities: {content: "tomorrow's meeting"}
+
+For ambiguous or general conversation, use intent: "general"`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{
-              text: `You are an intent classification system. Always respond with valid JSON.\n\n${prompt}`
-            }]
-          }
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Classify this input: "${text}"` }
         ],
-        generationConfig: {
-          maxOutputTokens: 300,
-          temperature: 0.1
-        }
+        temperature: 0.1,
+        max_tokens: 300
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const content = data.candidates[0].content.parts[0].text;
-    
+    const completion = await response.json();
+    const result = completion.choices[0].message.content;
+
+    let nluResult;
     try {
-      const result = JSON.parse(content);
-      return new Response(
-        JSON.stringify(result),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', content);
-      console.error('Parse error:', parseError);
-      
-      // Fallback classification with better logic
-      const lowerText = text.toLowerCase().trim();
-      const fallback = {
-        intent: simpleClassifyIntent(lowerText),
-        entities: simpleExtractEntities(lowerText),
-        confidence: 0.6,
-        needsPlanning: simpleNeedsPlanning(lowerText),
-        isQuestion: lowerText.includes('?') || lowerText.startsWith('what') || 
-                   lowerText.startsWith('how') || lowerText.startsWith('when') ||
-                   lowerText.startsWith('where') || lowerText.startsWith('why') ||
-                   lowerText.startsWith('who') || lowerText.startsWith('can you') ||
-                   lowerText.startsWith('do you') || lowerText.startsWith('will you')
+      nluResult = JSON.parse(result);
+    } catch (error) {
+      console.error('Failed to parse NLU result:', result);
+      // Fallback classification
+      nluResult = {
+        intent: 'general',
+        entities: {},
+        confidence: 0.5,
+        needsPlanning: false,
+        isQuestion: true
       };
-      
-      console.log('Using fallback classification:', fallback);
-      
-      return new Response(
-        JSON.stringify(fallback),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
+
+    // Ensure required fields
+    nluResult.intent = nluResult.intent || 'general';
+    nluResult.entities = nluResult.entities || {};
+    nluResult.confidence = nluResult.confidence || 0.5;
+    nluResult.needsPlanning = nluResult.needsPlanning !== false;
+    nluResult.isQuestion = nluResult.isQuestion !== false;
+
+    return new Response(JSON.stringify(nluResult), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
-    console.error('Intent classification error:', error);
+    console.error('Error in classify-intent function:', error);
     
-    // Return a safe fallback response
-    const safeFallback = {
+    // Return safe fallback
+    return new Response(JSON.stringify({
       intent: 'general',
       entities: {},
-      confidence: 0.5,
+      confidence: 0.3,
       needsPlanning: false,
-      isQuestion: false
-    };
-    
-    return new Response(
-      JSON.stringify(safeFallback),
-      { 
-        status: 200, // Return 200 so the client gets the fallback
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-
-  // Helper functions for fallback classification
-  function simpleClassifyIntent(text: string): string {
-    if (text.includes('timer') || text.includes('alarm') || text.includes('remind')) return 'timer';
-    if (text.includes('note') || text.includes('write') || text.includes('remember')) return 'notes';
-    if (text.includes('weather') || text.includes('temperature')) return 'weather';
-    if (text.includes('search') || text.includes('find') || text.includes('look')) return 'search';
-    if (text.includes('code') || text.includes('debug') || text.includes('implement')) return 'development';
-    return 'general';
-  }
-
-  function simpleExtractEntities(text: string): Record<string, any> {
-    const entities: Record<string, any> = {};
-    
-    // Extract time patterns
-    const timeMatch = text.match(/(\d+)\s*(minute|min|second|sec|hour|hr)/i);
-    if (timeMatch) entities.duration = timeMatch[0];
-    
-    // Extract locations
-    const locationMatch = text.match(/in\s+([a-z\s]+)/i);
-    if (locationMatch) entities.location = locationMatch[1].trim();
-    
-    return entities;
-  }
-
-  function simpleNeedsPlanning(text: string): boolean {
-    const planningKeywords = ['create', 'set', 'make', 'add', 'start', 'timer', 'note', 'weather', 'search'];
-    return planningKeywords.some(keyword => text.includes(keyword));
+      isQuestion: true,
+      error: error.message
+    }), {
+      status: 200, // Return 200 with fallback instead of error
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

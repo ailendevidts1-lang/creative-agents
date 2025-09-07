@@ -6,131 +6,128 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { query, intent, entities, context } = await req.json();
-    
-    if (!query || !intent) {
-      throw new Error('Query and intent are required');
+    const { query, intent, entities, context, availableSkills } = await req.json();
+
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
     }
 
-    const contextStr = context?.map((c: any) => `${c.type}: ${c.content}`).join('\n') || '';
+    // Create a comprehensive prompt for plan generation
+    const systemPrompt = `You are a task planning AI that creates executable plans based on user requests.
 
-    const prompt = `Create an execution plan for this user request:
+Available Skills:
+${availableSkills?.join('\n') || 'No skills available'}
 
-Query: "${query}"
-Intent: ${intent}
-Entities: ${JSON.stringify(entities)}
-
-Recent Context:
-${contextStr}
-
-Generate a step-by-step plan with this JSON format:
+You must respond with a JSON object containing:
 {
   "steps": [
     {
       "id": "unique_id",
-      "type": "skill|api|search|computation", 
-      "action": "specific_action_name",
-      "parameters": {
-        "param1": "value1"
-      },
+      "type": "skill|api|search|computation",
+      "action": "action_name",
+      "parameters": {...},
       "dependencies": []
     }
   ],
-  "summary": "Brief description of the plan",
+  "summary": "Brief description of what this plan accomplishes",
   "estimatedDuration": 5000
 }
 
-Available actions by type:
-- skill: create_timer, create_note, list_notes, list_timers
-- api: get_weather, get_location
-- search: web_search, knowledge_search
-- computation: calculate, analyze, summarize
+Choose appropriate action types:
+- "skill" for core skills like create_timer, create_note, get_weather, web_search
+- "api" for external API calls  
+- "search" for information retrieval
+- "computation" for general processing
 
-Make the plan specific and actionable.`;
+Map common intents:
+- timer requests → create_timer skill
+- note requests → create_note skill  
+- weather requests → get_weather skill
+- search requests → web_search skill
+- list requests → list_timers or list_notes skills
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+Keep plans simple and focused on the user's actual request.`;
+
+    const userPrompt = `Intent: ${intent}
+Query: "${query}"
+Entities: ${JSON.stringify(entities)}
+Context: ${JSON.stringify(context?.slice(-3) || [])}
+
+Create an execution plan for this request.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{
-              text: `You are a task planning AI. Always respond with valid JSON.\n\n${prompt}`
-            }]
-          }
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
         ],
-        generationConfig: {
-          maxOutputTokens: 500,
-          temperature: 0.2
-        }
+        temperature: 0.3,
+        max_tokens: 1000
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const content = data.candidates[0].content.parts[0].text;
-    
+    const completion = await response.json();
+    const planContent = completion.choices[0].message.content;
+
+    let planData;
     try {
-      const plan = JSON.parse(content);
-      
-      // Validate plan structure
-      if (!plan.steps || !Array.isArray(plan.steps)) {
-        throw new Error('Invalid plan format');
-      }
-
-      // Add unique IDs if missing
-      plan.steps = plan.steps.map((step: any, index: number) => ({
-        ...step,
-        id: step.id || `step_${index}_${Date.now()}`
-      }));
-
-      return new Response(
-        JSON.stringify(plan),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (parseError) {
-      console.error('Failed to parse planning response:', content);
-      
-      // Create fallback plan
-      const fallbackPlan = {
-        steps: [
-          {
-            id: `fallback_${Date.now()}`,
-            type: 'computation',
-            action: 'process_request',
-            parameters: { query, intent },
-            dependencies: []
-          }
-        ],
-        summary: `Execute ${intent} request: ${query}`,
+      planData = JSON.parse(planContent);
+    } catch (error) {
+      console.error('Failed to parse plan JSON:', planContent);
+      // Fallback plan
+      planData = {
+        steps: [{
+          id: `step_${Date.now()}`,
+          type: 'computation',
+          action: 'process_general_query',
+          parameters: { query, intent },
+          dependencies: []
+        }],
+        summary: `Process ${intent} request: ${query}`,
         estimatedDuration: 3000
       };
-      
-      return new Response(
-        JSON.stringify(fallbackPlan),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
+    // Ensure all steps have required fields
+    planData.steps = planData.steps.map((step: any, index: number) => ({
+      id: step.id || `step_${Date.now()}_${index}`,
+      type: step.type || 'computation',
+      action: step.action || 'process_general_query',
+      parameters: step.parameters || { query, intent },
+      dependencies: step.dependencies || []
+    }));
+
+    return new Response(JSON.stringify(planData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
   } catch (error) {
-    console.error('Planning error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.error('Error in create-plan function:', error);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Failed to create plan',
+      details: 'Plan creation failed'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

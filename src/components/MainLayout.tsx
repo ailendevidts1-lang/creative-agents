@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { VoiceScreen } from "./voice/VoiceScreen";
+import { VoiceScreenEnhanced } from "./voice/VoiceScreenEnhanced";
 import { ManualScreen } from "./chat/ManualScreen";
 import { TopBar } from "./layout/TopBar";
 import { BottomNavigation } from "./layout/BottomNavigation";
@@ -68,7 +68,7 @@ export function MainLayout() {
     }
 
     return appState.mode === "voice" ? (
-      <VoiceScreen 
+      <VoiceScreenEnhanced 
         appState={appState}
         updateAppState={updateAppState}
       />

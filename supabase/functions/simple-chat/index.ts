@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,106 +15,73 @@ serve(async (req) => {
 
   try {
     const { message, context } = await req.json();
-    
-    if (!message || typeof message !== 'string') {
-      throw new Error('Message is required and must be a string');
+
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
     }
 
-    console.log('Processing message:', message);
+    // Build conversation context
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a helpful AI assistant. You can assist with general questions and conversations. 
+        
+For specific tasks like timers, notes, weather, or search, you should suggest using the voice assistant or manual interface features, but you can still provide general help and conversation.
 
-    // Build context from conversation history
-    const contextMessages = [];
+Be conversational, helpful, and concise. Keep responses under 150 words unless more detail is specifically requested.`
+      }
+    ];
+
+    // Add context messages
     if (context && Array.isArray(context)) {
-      contextMessages.push(...context.slice(-5).map((c: any) => ({
-        role: c.type === 'user' ? 'user' : 'assistant',
-        content: c.content
-      })));
+      context.slice(-5).forEach((msg: any) => {
+        if (msg.type === 'user') {
+          messages.push({ role: 'user', content: msg.content });
+        } else if (msg.type === 'assistant') {
+          messages.push({ role: 'assistant', content: msg.content });
+        }
+      });
     }
 
-    // Add current user message
-    contextMessages.push({
-      role: 'user',
-      content: message
-    });
+    // Add current message
+    messages.push({ role: 'user', content: message });
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{
-              text: `You are Jarvis, an advanced AI assistant integrated into a voice-first interface. You help users with:
-
-- Creating timers and reminders
-- Taking and managing notes
-- Getting weather information
-- Searching for information
-- Answering questions
-- General conversation and assistance
-
-Keep responses conversational, helpful, and concise. When users ask to create timers, notes, get weather, or search for information, acknowledge their request and let them know you're processing it.
-
-Current capabilities you have access to:
-- Timer management (create, list, cancel)
-- Note-taking (create, edit, search)
-- Weather information
-- Web search and Q&A
-- General knowledge and conversation
-
-Be friendly, efficient, and always aim to be helpful.
-
-Conversation context:
-${contextMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-Current user message: ${message}`
-            }]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 500,
-          temperature: 0.7
-        }
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: 0.7,
+        max_tokens: 300
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const aiResponse = data.candidates[0].content.parts[0].text;
+    const completion = await response.json();
+    const aiResponse = completion.choices[0].message.content;
 
-    console.log('AI Response:', aiResponse);
-
-    return new Response(
-      JSON.stringify({ 
-        response: aiResponse,
-        success: true
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({
+      response: aiResponse
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error('Error in simple-chat function:', error);
     
-    // Return fallback response
-    const fallbackResponse = "I'm having trouble processing your request right now. Let me try to help you in a simpler way. What would you like to do?";
-    
-    return new Response(
-      JSON.stringify({ 
-        response: fallbackResponse,
-        success: false,
-        error: error.message 
-      }),
-      { 
-        status: 200, // Return 200 so the client gets the fallback
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Chat failed',
+      response: 'I apologize, but I am experiencing some technical difficulties right now. Please try again in a moment.'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
