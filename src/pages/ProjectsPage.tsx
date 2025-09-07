@@ -131,7 +131,7 @@ export function ProjectsPage({ onNavigateToStudio }: ProjectsPageProps) {
                     <Button 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => navigate(`/studio/${project.id}`)}
+                      onClick={() => window.location.href = `/studio/${project.id}`}
                     >
                       <Play className="w-4 h-4 mr-2" />
                       Open Studio
