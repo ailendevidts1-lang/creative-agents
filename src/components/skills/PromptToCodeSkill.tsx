@@ -372,6 +372,11 @@ export function PromptToCodeSkill() {
     });
   };
 
+  const handleEditProject = (project: Project) => {
+    // Navigate to studio page
+    window.location.href = `/studio/${project.id}`;
+  };
+
   const renderPipeline = () => (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Pipeline Progress</h3>
@@ -431,6 +436,10 @@ export function PromptToCodeSkill() {
       </div>
       
       <div className="flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => handleEditProject(project)}>
+          <Edit className="w-4 h-4 mr-1" />
+          Edit in Studio
+        </Button>
         {project.url && (
           <Button size="sm" variant="outline" onClick={() => window.open(project.url, '_blank')}>
             <Globe className="w-4 h-4 mr-1" />
