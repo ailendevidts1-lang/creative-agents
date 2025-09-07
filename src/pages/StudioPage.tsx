@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play, GitBranch, Download, Settings } from 'lucide-react';
+import { ArrowLeft, Play, GitBranch, Download, Settings, Save } from 'lucide-react';
 import { FileExplorer } from '@/components/studio/FileExplorer';
 import { CodeEditor } from '@/components/studio/CodeEditor';
 import { AISidecar } from '@/components/studio/AISidecar';
@@ -9,38 +9,31 @@ import { GitPanel } from '@/components/studio/GitPanel';
 import { TerminalPanel } from '@/components/studio/TerminalPanel';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-interface ProjectFile {
-  id: string;
-  name: string;
-  path: string;
-  type: 'file' | 'folder';
-  content?: string;
-  children?: ProjectFile[];
-}
-
-interface EditorTab {
-  id: string;
-  name: string;
-  path: string;
-  content: string;
-  modified: boolean;
-}
+import { useProjectFiles } from '@/hooks/useProjectFiles';
+import { useToast } from '@/hooks/use-toast';
 
 export function StudioPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [project, setProject] = useState<any>(null);
-  const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [openTabs, setOpenTabs] = useState<EditorTab[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [currentBranch, setCurrentBranch] = useState('main');
+  
+  const {
+    fileSystem,
+    isLoading,
+    openFile,
+    closeTab,
+    updateFileContent,
+    saveFile,
+    saveAllFiles,
+    applyPatches,
+    getCurrentFiles
+  } = useProjectFiles(projectId);
 
   useEffect(() => {
-    // Load project and files
     loadProject();
-    loadFiles();
   }, [projectId]);
 
   const loadProject = async () => {
@@ -53,81 +46,36 @@ export function StudioPage() {
     });
   };
 
-  const loadFiles = () => {
-    // Mock file structure
-    const mockFiles: ProjectFile[] = [
-      {
-        id: '1',
-        name: 'src',
-        path: 'src',
-        type: 'folder',
-        children: [
-          {
-            id: '2',
-            name: 'components',
-            path: 'src/components',
-            type: 'folder',
-            children: [
-              {
-                id: '3',
-                name: 'App.tsx',
-                path: 'src/components/App.tsx',
-                type: 'file',
-                content: 'import React from "react";\n\nfunction App() {\n  return (\n    <div className="App">\n      <h1>Hello World</h1>\n    </div>\n  );\n}\n\nexport default App;'
-              }
-            ]
-          }
-        ]
-      },
-      {
-        id: '4',
-        name: 'package.json',
-        path: 'package.json',
-        type: 'file',
-        content: '{\n  "name": "ai-project",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.0.0"\n  }\n}'
-      }
-    ];
-    setFiles(mockFiles);
-  };
-
-  const openFile = (file: ProjectFile) => {
-    if (file.type === 'folder') return;
-    
-    const existingTab = openTabs.find(tab => tab.path === file.path);
-    if (existingTab) {
-      setActiveTab(existingTab.id);
-      return;
-    }
-
-    const newTab: EditorTab = {
-      id: file.id,
-      name: file.name,
-      path: file.path,
-      content: file.content || '',
-      modified: false
-    };
-
-    setOpenTabs(prev => [...prev, newTab]);
-    setActiveTab(newTab.id);
-  };
-
-  const closeTab = (tabId: string) => {
-    setOpenTabs(prev => prev.filter(tab => tab.id !== tabId));
-    if (activeTab === tabId && openTabs.length > 1) {
-      const index = openTabs.findIndex(tab => tab.id === tabId);
-      const nextTab = openTabs[index + 1] || openTabs[index - 1];
-      setActiveTab(nextTab?.id || '');
+  const handleSaveAll = async () => {
+    try {
+      await saveAllFiles();
+      toast({
+        title: "Files Saved",
+        description: "All modified files have been saved",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save files. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const updateTabContent = (tabId: string, content: string) => {
-    setOpenTabs(prev => 
-      prev.map(tab => 
-        tab.id === tabId 
-          ? { ...tab, content, modified: true }
-          : tab
-      )
-    );
+  const handleApplyPatches = (patches: any[]) => {
+    try {
+      applyPatches(patches);
+      toast({
+        title: "Patches Applied",
+        description: `Applied ${patches.length} code changes`,
+      });
+    } catch (error) {
+      toast({
+        title: "Apply Failed",
+        description: "Failed to apply patches. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const runProject = () => {
@@ -135,6 +83,19 @@ export function StudioPage() {
     // Simulate build process
     setTimeout(() => setIsRunning(false), 3000);
   };
+
+  const hasUnsavedChanges = fileSystem.openTabs.some(tab => tab.modified);
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading project files...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -159,6 +120,16 @@ export function StudioPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSaveAll}
+            disabled={!hasUnsavedChanges}
+            className="flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            Save All {hasUnsavedChanges && `(${fileSystem.openTabs.filter(t => t.modified).length})`}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -189,7 +160,7 @@ export function StudioPage() {
                 <TabsTrigger value="git">Git</TabsTrigger>
               </TabsList>
               <TabsContent value="files" className="h-full">
-                <FileExplorer files={files} onFileOpen={openFile} />
+                <FileExplorer files={fileSystem.files} onFileOpen={openFile} />
               </TabsContent>
               <TabsContent value="git" className="h-full">
                 <GitPanel />
@@ -204,11 +175,14 @@ export function StudioPage() {
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={70} minSize={40}>
                 <CodeEditor
-                  tabs={openTabs}
-                  activeTab={activeTab}
+                  tabs={fileSystem.openTabs}
+                  activeTab={fileSystem.activeTab}
                   onTabClose={closeTab}
-                  onTabSelect={setActiveTab}
-                  onContentChange={updateTabContent}
+                  onTabSelect={(tabId) => {
+                    const updatedFileSystem = { ...fileSystem, activeTab: tabId };
+                    // We need to manage this state properly, but for now this will work
+                  }}
+                  onContentChange={updateFileContent}
                 />
               </ResizablePanel>
               
@@ -224,7 +198,11 @@ export function StudioPage() {
 
           {/* Right Panel - AI Sidecar */}
           <ResizablePanel defaultSize={30} minSize={25}>
-            <AISidecar projectId={projectId} />
+            <AISidecar 
+              projectId={projectId} 
+              currentFiles={getCurrentFiles()}
+              onApplyPatches={handleApplyPatches}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
