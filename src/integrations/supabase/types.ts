@@ -65,6 +65,48 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_skills: {
+        Row: {
+          bg_color: string
+          color: string
+          component_code: string
+          component_name: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bg_color: string
+          color: string
+          component_code: string
+          component_name: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bg_color?: string
+          color?: string
+          component_code?: string
+          component_name?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           content: string | null

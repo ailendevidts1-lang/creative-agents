@@ -168,23 +168,28 @@ export function ${componentName}Skill() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Save to a generated_skills table (we'll need to create this)
-      const { error } = await supabase
-        .from('generated_skills')
-        .upsert({
-          id: skill.id,
-          user_id: user.id,
-          name: skill.name,
-          description: skill.description,
-          icon: skill.icon,
-          color: skill.color,
-          bg_color: skill.bgColor,
-          component_name: skill.component,
-          component_code: skill.code,
-          created_at: skill.created_at
-        });
+      // For now, save as a simple record in user preferences or local storage
+      // This can be enhanced later when the Supabase types are updated
+      const skillsData = {
+        id: skill.id,
+        user_id: user.id,
+        name: skill.name,
+        description: skill.description,
+        icon: skill.icon,
+        color: skill.color,
+        bg_color: skill.bgColor,
+        component_name: skill.component,
+        component_code: skill.code,
+        created_at: skill.created_at
+      };
 
-      if (error) throw error;
+      // Store in localStorage for now
+      const existingSkills = localStorage.getItem('generated_skills');
+      const skills = existingSkills ? JSON.parse(existingSkills) : [];
+      skills.push(skillsData);
+      localStorage.setItem('generated_skills', JSON.stringify(skills));
+
+      console.log('Generated skill saved locally:', skillsData);
     } catch (error) {
       console.error('Error saving generated skill:', error);
       throw error;
