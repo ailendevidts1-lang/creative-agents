@@ -152,9 +152,11 @@ export type Database = {
           difficulty: string | null
           expected_roi: number | null
           id: string
+          industry: string | null
           investment: number | null
           market: string | null
           ramp_time: string | null
+          status: string | null
           title: string
           user_id: string
         }
@@ -165,9 +167,11 @@ export type Database = {
           difficulty?: string | null
           expected_roi?: number | null
           id?: string
+          industry?: string | null
           investment?: number | null
           market?: string | null
           ramp_time?: string | null
+          status?: string | null
           title: string
           user_id: string
         }
@@ -178,9 +182,11 @@ export type Database = {
           difficulty?: string | null
           expected_roi?: number | null
           id?: string
+          industry?: string | null
           investment?: number | null
           market?: string | null
           ramp_time?: string | null
+          status?: string | null
           title?: string
           user_id?: string
         }
@@ -189,7 +195,9 @@ export type Database = {
       business_plans: {
         Row: {
           budget: number | null
+          business_idea_id: string | null
           channels: string[] | null
+          content: Json | null
           created_at: string
           id: string
           idea_id: string | null
@@ -204,7 +212,9 @@ export type Database = {
         }
         Insert: {
           budget?: number | null
+          business_idea_id?: string | null
           channels?: string[] | null
+          content?: Json | null
           created_at?: string
           id?: string
           idea_id?: string | null
@@ -219,7 +229,9 @@ export type Database = {
         }
         Update: {
           budget?: number | null
+          business_idea_id?: string | null
           channels?: string[] | null
+          content?: Json | null
           created_at?: string
           id?: string
           idea_id?: string | null
@@ -233,6 +245,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "business_plans_business_idea_id_fkey"
+            columns: ["business_idea_id"]
+            isOneToOne: false
+            referencedRelation: "business_ideas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "business_plans_idea_id_fkey"
             columns: ["idea_id"]
@@ -302,6 +321,7 @@ export type Database = {
           daily_revenue: number | null
           description: string | null
           id: string
+          industry: string | null
           metadata: Json | null
           name: string
           next_tasks: string[] | null
@@ -319,6 +339,7 @@ export type Database = {
           daily_revenue?: number | null
           description?: string | null
           id?: string
+          industry?: string | null
           metadata?: Json | null
           name: string
           next_tasks?: string[] | null
@@ -336,6 +357,7 @@ export type Database = {
           daily_revenue?: number | null
           description?: string | null
           id?: string
+          industry?: string | null
           metadata?: Json | null
           name?: string
           next_tasks?: string[] | null
