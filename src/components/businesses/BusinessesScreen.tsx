@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Plus, TrendingUp, DollarSign, Target, Calendar, Settings, Zap, Eye, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Business {
   id: string;
@@ -50,156 +51,250 @@ interface BusinessesScreenProps {
 
 export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
   const [activeTab, setActiveTab] = useState("ideas");
-  const [businesses, setBusinesses] = useState<Business[]>([
-    {
-      id: "1",
-      name: "Tech Myths Shorts",
-      type: "Content Business",
-      status: "live",
-      dailyRevenue: 127.50,
-      totalRevenue: 3825,
-      nextTasks: ["Upload tomorrow's video", "Reply to 5 comments", "Check analytics"],
-      progress: 78,
-      description: "Viral TikTok/YouTube Shorts debunking tech myths",
-      roi: 340,
-      channels: ["TikTok", "YouTube", "Instagram"]
-    },
-    {
-      id: "2", 
-      name: "Dental Website Agency",
-      type: "Service Business",
-      status: "executing",
-      dailyRevenue: 85.20,
-      totalRevenue: 1704,
-      nextTasks: ["Complete Dr. Smith's site", "Send 3 cold emails", "Schedule consultation call"],
-      progress: 45,
-      description: "Custom websites for dental practices",
-      roi: 280,
-      channels: ["Email", "LinkedIn", "Cold Calling"]
-    }
-  ]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [ideas, setIdeas] = useState<BusinessIdea[]>([]);
+  const [plans, setPlans] = useState<BusinessPlan[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [ideas, setIdeas] = useState<BusinessIdea[]>([
-    {
-      id: "1",
-      title: "AI Recipe Optimizer",
-      description: "Mobile app that optimizes recipes based on dietary restrictions and available ingredients",
-      expectedRoi: 450,
-      rampTime: "2-3 months",
-      market: "Health & Nutrition",
-      difficulty: "medium",
-      investment: 2500
-    },
-    {
-      id: "2",
-      title: "Local Business Social Media Automation",
-      description: "Automated social media posting and engagement for small businesses",
-      expectedRoi: 320,
-      rampTime: "6-8 weeks",
-      market: "SMB Services",
-      difficulty: "low",
-      investment: 1200
-    },
-    {
-      id: "3",
-      title: "Niche Newsletter Empire",
-      description: "Curated newsletters for specific professional niches with premium subscriptions",
-      expectedRoi: 280,
-      rampTime: "4-6 months",
-      market: "Information Products",
-      difficulty: "high",
-      investment: 800
-    }
-  ]);
+  useEffect(() => {
+    loadBusinessData();
+  }, []);
 
-  const [plans, setPlans] = useState<BusinessPlan[]>([
-    {
-      id: "1",
-      ideaId: "1",
-      title: "AI Recipe Optimizer - Launch Plan",
-      niche: "Health-conscious home cooks",
-      budget: 2500,
-      timeline: "12 weeks",
-      channels: ["App Store", "Social Media", "Food Blogs"],
-      milestones: ["MVP Development", "Beta Testing", "App Store Launch", "Marketing Campaign"],
-      ready: true
-    }
-  ]);
+  const loadBusinessData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load businesses
+      const { data: businessesData, error: businessError } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (businessError) throw businessError;
 
-  const generateNewIdea = () => {
-    const sampleIdeas = [
-      {
-        title: "Virtual Interior Design Service",
-        description: "AI-powered interior design consultations with 3D visualization",
-        expectedRoi: 380,
-        rampTime: "3-4 months",
-        market: "Home & Design",
-        difficulty: "medium" as const,
-        investment: 3000
-      },
-      {
-        title: "Automated Podcast Editing",
-        description: "AI service that edits and enhances podcasts automatically",
-        expectedRoi: 420,
-        rampTime: "2-3 months", 
-        market: "Creator Tools",
-        difficulty: "high" as const,
-        investment: 1800
+      // Load business ideas
+      const { data: ideasData, error: ideasError } = await supabase
+        .from('business_ideas')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (ideasError) throw ideasError;
+
+      // Load business plans
+      const { data: plansData, error: plansError } = await supabase
+        .from('business_plans')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (plansError) throw plansError;
+
+      // Transform data to match component interfaces
+      setBusinesses(businessesData?.map(b => ({
+        id: b.id,
+        name: b.name,
+        type: b.type,
+        status: b.status as Business["status"],
+        dailyRevenue: Number(b.daily_revenue) || 0,
+        totalRevenue: Number(b.total_revenue) || 0,
+        nextTasks: b.next_tasks || [],
+        progress: b.progress || 0,
+        description: b.description || "",
+        roi: Number(b.roi) || 0,
+        channels: b.channels || []
+      })) || []);
+
+      setIdeas(ideasData?.map(i => ({
+        id: i.id,
+        title: i.title,
+        description: i.description || "",
+        expectedRoi: Number(i.expected_roi) || 0,
+        rampTime: i.ramp_time || "",
+        market: i.market || "",
+        difficulty: (i.difficulty as BusinessIdea["difficulty"]) || "medium",
+        investment: Number(i.investment) || 0
+      })) || []);
+
+      setPlans(plansData?.map(p => ({
+        id: p.id,
+        ideaId: p.idea_id || "",
+        title: p.title,
+        niche: p.niche || "",
+        budget: Number(p.budget) || 0,
+        timeline: p.timeline || "",
+        channels: p.channels || [],
+        milestones: p.milestones || [],
+        ready: p.ready || false
+      })) || []);
+
+    } catch (error) {
+      console.error('Error loading business data:', error);
+      toast.error('Failed to load business data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateNewIdea = async () => {
+    try {
+      setLoading(true);
+      toast.loading("Generating new business idea...");
+
+      const { data, error } = await supabase.functions.invoke('generate-business-idea', {
+        body: {
+          prompt: "Generate an innovative and profitable business idea",
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.businessIdea) {
+        const idea = data.businessIdea;
+        const newIdea: BusinessIdea = {
+          id: Date.now().toString(),
+          title: idea.title,
+          description: idea.description,
+          expectedRoi: parseInt(idea.startup_costs.replace(/[^0-9]/g, '')) || 300,
+          rampTime: "2-4 months",
+          market: idea.industry,
+          difficulty: "medium",
+          investment: parseInt(idea.startup_costs.replace(/[^0-9]/g, '')) || 2000
+        };
+
+        setIdeas(prev => [newIdea, ...prev]);
+        toast.dismiss();
+        toast.success("New business idea generated!");
+      } else {
+        throw new Error('Failed to generate business idea');
       }
-    ];
-
-    const newIdea = {
-      id: Date.now().toString(),
-      ...sampleIdeas[Math.floor(Math.random() * sampleIdeas.length)]
-    };
-
-    setIdeas(prev => [newIdea, ...prev]);
-    toast.success("New business idea generated!");
+    } catch (error) {
+      console.error('Error generating idea:', error);
+      toast.dismiss();
+      toast.error('Failed to generate business idea');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const approveIdea = (ideaId: string) => {
-    const idea = ideas.find(i => i.id === ideaId);
-    if (!idea) return;
+  const approveIdea = async (ideaId: string) => {
+    try {
+      const idea = ideas.find(i => i.id === ideaId);
+      if (!idea) return;
 
-    const newPlan: BusinessPlan = {
-      id: Date.now().toString(),
-      ideaId,
-      title: `${idea.title} - Launch Plan`,
-      niche: "Target audience analysis pending",
-      budget: idea.investment,
-      timeline: "8-12 weeks",
-      channels: ["Digital Marketing", "Social Media", "Direct Sales"],
-      milestones: ["Market Research", "Product Development", "Beta Testing", "Launch", "Scale"],
-      ready: false
-    };
+      setLoading(true);
+      toast.loading("Creating business plan...");
 
-    setPlans(prev => [newPlan, ...prev]);
-    setActiveTab("plans");
-    toast.success("Business plan created! Review and approve to begin execution.");
+      const { data, error } = await supabase.functions.invoke('create-business-plan', {
+        body: {
+          businessIdeaId: ideaId,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.businessPlan) {
+        const plan = data.businessPlan;
+        const newPlan: BusinessPlan = {
+          id: plan.id,
+          ideaId,
+          title: plan.title,
+          niche: plan.content?.executive_summary || "Target audience analysis pending",
+          budget: idea.investment,
+          timeline: "8-12 weeks",
+          channels: plan.content?.marketing_sales?.marketing_strategy ? 
+            [plan.content.marketing_sales.marketing_strategy] : 
+            ["Digital Marketing", "Social Media", "Direct Sales"],
+          milestones: plan.content?.milestones?.map((m: any) => m.milestone) || 
+            ["Market Research", "Product Development", "Beta Testing", "Launch", "Scale"],
+          ready: true
+        };
+
+        setPlans(prev => [newPlan, ...prev]);
+        setActiveTab("plans");
+        toast.dismiss();
+        toast.success("Business plan created! Review and approve to begin execution.");
+      } else {
+        throw new Error('Failed to create business plan');
+      }
+    } catch (error) {
+      console.error('Error creating plan:', error);
+      toast.dismiss();
+      toast.error('Failed to create business plan');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const approvePlan = (planId: string) => {
-    const plan = plans.find(p => p.id === planId);
-    if (!plan) return;
+  const approvePlan = async (planId: string) => {
+    try {
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) return;
 
-    const newBusiness: Business = {
-      id: Date.now().toString(),
-      name: plan.title.replace(" - Launch Plan", ""),
-      type: "Digital Business",
-      status: "planning",
-      dailyRevenue: 0,
-      totalRevenue: 0,
-      nextTasks: ["Set up accounts", "Create initial content", "Launch marketing"],
-      progress: 5,
-      description: "Automated business execution starting...",
-      roi: 0,
-      channels: plan.channels
-    };
+      setLoading(true);
+      toast.loading("Starting business execution...");
 
-    setBusinesses(prev => [newBusiness, ...prev]);
-    setPlans(prev => prev.filter(p => p.id !== planId));
-    setActiveTab("active");
-    toast.success("Business execution started! AI is now working on your behalf.");
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) throw new Error('User not authenticated');
+
+      // Create business in database
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .insert({
+          user_id: user.data.user.id,
+          name: plan.title.replace(" - Launch Plan", ""),
+          type: "Digital Business",
+          status: "planning",
+          daily_revenue: 0,
+          total_revenue: 0,
+          roi: 0,
+          progress: 5,
+          description: "Automated business execution starting...",
+          channels: plan.channels,
+          next_tasks: ["Set up accounts", "Create initial content", "Launch marketing"]
+        })
+        .select()
+        .single();
+
+      if (businessError) throw businessError;
+
+      // Create automation pipeline
+      const { data: pipelineData, error: pipelineError } = await supabase.functions.invoke('create-automation-pipeline', {
+        body: {
+          businessId: businessData.id,
+          userId: user.data.user.id,
+          automationType: 'comprehensive'
+        }
+      });
+
+      if (pipelineError) console.warn('Pipeline creation warning:', pipelineError);
+
+      const newBusiness: Business = {
+        id: businessData.id,
+        name: businessData.name,
+        type: businessData.type,
+        status: businessData.status as Business["status"],
+        dailyRevenue: 0,
+        totalRevenue: 0,
+        nextTasks: businessData.next_tasks || [],
+        progress: businessData.progress || 5,
+        description: businessData.description || "",
+        roi: 0,
+        channels: businessData.channels || []
+      };
+
+      setBusinesses(prev => [newBusiness, ...prev]);
+      setPlans(prev => prev.filter(p => p.id !== planId));
+      setActiveTab("active");
+      toast.dismiss();
+      toast.success("Business execution started! AI is now working on your behalf.");
+    } catch (error) {
+      console.error('Error starting business:', error);
+      toast.dismiss();
+      toast.error('Failed to start business execution');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status: Business["status"]) => {
