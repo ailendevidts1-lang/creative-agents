@@ -371,7 +371,7 @@ export function ManualScreen({ appState, updateAppState, onSwitchToVoice }: Manu
       )}
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 relative">
         <ChatThread messages={messages} />
         
         {/* Tool Results Overlay */}
