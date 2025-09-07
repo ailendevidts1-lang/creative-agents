@@ -62,8 +62,10 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
   const [showIdeaDialog, setShowIdeaDialog] = useState(false);
   const [ideaPrompt, setIdeaPrompt] = useState("");
   const [autoExecutePipeline, setAutoExecutePipeline] = useState(true);
+  const [showPlanApproval, setShowPlanApproval] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<BusinessPlan | null>(null);
   const [pipelineProgress, setPipelineProgress] = useState<{
-    stage: 'idle' | 'generating' | 'planning' | 'executing' | 'complete';
+    stage: 'idle' | 'generating' | 'planning' | 'approval' | 'executing' | 'complete';
     message: string;
   }>({ stage: 'idle', message: '' });
   const businessService = useBusinessService();
@@ -81,54 +83,82 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
       
   const executeFullPipeline = async (prompt: string) => {
     try {
-      setPipelineProgress({ stage: 'generating', message: 'Generating business idea...' });
+      setPipelineProgress({ stage: 'generating', message: 'Generating business idea with Gemini AI...' });
       
       // Step 1: Generate business idea
       const newIdea = await businessService.generateBusinessIdea(prompt);
       if (!newIdea) throw new Error('Failed to generate idea');
       
       setIdeas(prev => [newIdea, ...prev]);
-      toast.success("Business idea generated!");
+      toast.success("✨ Business idea generated!");
 
-      if (!autoExecutePipeline) {
-        setPipelineProgress({ stage: 'idle', message: '' });
-        return;
-      }
-
-      // Step 2: Create business plan
-      setPipelineProgress({ stage: 'planning', message: 'Creating comprehensive business plan...' });
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Brief pause for UX
+      // Step 2: Create comprehensive business plan
+      setPipelineProgress({ stage: 'planning', message: 'Creating detailed business plan with financial projections...' });
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       const newPlan = await businessService.createBusinessPlan(newIdea.id);
       if (!newPlan) throw new Error('Failed to create plan');
       
       setPlans(prev => [newPlan, ...prev]);
-      toast.success("Business plan created!");
+      setPendingPlan(newPlan);
 
-      // Step 3: Start business execution
-      setPipelineProgress({ stage: 'executing', message: 'Starting automated business execution...' });
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Brief pause for UX
-      
-      const newBusiness = await businessService.startBusiness(newPlan);
-      if (!newBusiness) throw new Error('Failed to start business');
-      
-      setBusinesses(prev => [newBusiness, ...prev]);
-      setPlans(prev => prev.filter(p => p.id !== newPlan.id));
-      
-      setPipelineProgress({ stage: 'complete', message: 'Business launched successfully!' });
-      setActiveTab("active");
-      toast.success("🎉 Full business pipeline completed! Your AI business is now running.");
-      
-      // Reset after showing completion
-      setTimeout(() => {
-        setPipelineProgress({ stage: 'idle', message: '' });
-      }, 3000);
+      if (autoExecutePipeline) {
+        // Auto-approve and execute
+        await executeBusinessPlan(newPlan);
+      } else {
+        // Show approval dialog
+        setPipelineProgress({ stage: 'approval', message: 'Business plan ready for review and approval' });
+        setShowPlanApproval(true);
+        toast.success("📋 Business plan created! Please review and approve.");
+      }
 
     } catch (error) {
       console.error('Pipeline error:', error);
       setPipelineProgress({ stage: 'idle', message: '' });
       toast.error('Pipeline failed: ' + (error as Error).message);
     }
+  };
+
+  const executeBusinessPlan = async (plan: BusinessPlan) => {
+    try {
+      setPipelineProgress({ stage: 'executing', message: 'Executing business plan - creating accounts and automations...' });
+      
+      // Step 3: Execute the business plan
+      const newBusiness = await businessService.startBusiness(plan);
+      if (!newBusiness) throw new Error('Failed to execute business plan');
+      
+      setBusinesses(prev => [newBusiness, ...prev]);
+      setPlans(prev => prev.filter(p => p.id !== plan.id));
+      
+      setPipelineProgress({ stage: 'complete', message: '🎉 Business successfully launched and automated!' });
+      setActiveTab("active");
+      setShowPlanApproval(false);
+      setPendingPlan(null);
+      toast.success("🚀 Business plan executed! AI automation is now running your business.");
+      
+      // Reset after showing completion
+      setTimeout(() => {
+        setPipelineProgress({ stage: 'idle', message: '' });
+      }, 4000);
+
+    } catch (error) {
+      console.error('Execution error:', error);
+      setPipelineProgress({ stage: 'idle', message: '' });
+      toast.error('Execution failed: ' + (error as Error).message);
+    }
+  };
+
+  const approvePlan = async () => {
+    if (pendingPlan) {
+      await executeBusinessPlan(pendingPlan);
+    }
+  };
+
+  const rejectPlan = () => {
+    setShowPlanApproval(false);
+    setPendingPlan(null);
+    setPipelineProgress({ stage: 'idle', message: '' });
+    toast.info("Business plan rejected. You can modify and try again.");
   };
 
   const generateNewIdea = async () => {
@@ -151,7 +181,7 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
     }
   };
 
-  const approvePlan = async (planId: string) => {
+  const approvePlanFromList = async (planId: string) => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
 
@@ -163,6 +193,7 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
       toast.success("Business execution started! AI is now working on your behalf.");
     }
   };
+
 
   const getStatusColor = (status: Business["status"]) => {
     switch (status) {
@@ -299,17 +330,19 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
                 <div className="text-lg font-semibold text-foreground mb-2">{pipelineProgress.message}</div>
                 <Progress 
                   value={
-                    pipelineProgress.stage === 'generating' ? 25 :
-                    pipelineProgress.stage === 'planning' ? 50 :
-                    pipelineProgress.stage === 'executing' ? 75 :
+                    pipelineProgress.stage === 'generating' ? 20 :
+                    pipelineProgress.stage === 'planning' ? 40 :
+                    pipelineProgress.stage === 'approval' ? 60 :
+                    pipelineProgress.stage === 'executing' ? 80 :
                     pipelineProgress.stage === 'complete' ? 100 : 0
                   } 
                   className="h-3"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                  <span>Generate Idea</span>
-                  <span>Create Plan</span>
-                  <span>Launch Business</span>
+                  <span>Generate</span>
+                  <span>Plan</span>
+                  <span>Approve</span>
+                  <span>Execute</span>
                   <span>Complete</span>
                 </div>
               </div>
@@ -429,7 +462,7 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
 
                       <div className="flex gap-2">
                         <Button 
-                          onClick={() => approvePlan(plan.id)} 
+                          onClick={() => approvePlanFromList(plan.id)} 
                           className="flex-1"
                           disabled={!plan.ready}
                         >
@@ -537,6 +570,77 @@ export function BusinessesScreen({ onBack }: BusinessesScreenProps) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Business Plan Approval Dialog */}
+      <Dialog open={showPlanApproval} onOpenChange={setShowPlanApproval}>
+        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Review Business Plan</DialogTitle>
+            <DialogDescription>
+              Gemini AI has generated a comprehensive business plan. Review the details and approve to start automated execution.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pendingPlan && (
+            <div className="grid gap-6 py-4">
+              <div className="grid gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{pendingPlan.title}</h3>
+                  <p className="text-muted-foreground">{pendingPlan.niche}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Budget</div>
+                    <div className="text-lg font-semibold">${pendingPlan.budget?.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Timeline</div>
+                    <div className="text-lg font-semibold">{pendingPlan.timeline}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Channels</div>
+                    <div className="text-sm">{pendingPlan.channels?.join(", ")}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="text-sm font-medium mb-2">Key Milestones</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {pendingPlan.milestones?.map((milestone, idx) => (
+                      <div key={idx} className="text-sm text-muted-foreground flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-primary/60"></div>
+                        {milestone}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">What happens when you approve?</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• AI will create necessary business accounts and profiles</li>
+                  <li>• Automated content generation and scheduling systems will be set up</li>
+                  <li>• Marketing campaigns will be launched across selected channels</li>
+                  <li>• Revenue tracking and optimization will begin automatically</li>
+                  <li>• You'll receive daily progress reports and recommendations</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={rejectPlan}>
+              Reject & Modify
+            </Button>
+            <Button onClick={approvePlan} className="gap-2">
+              <Zap className="h-4 w-4" />
+              Approve & Execute Plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

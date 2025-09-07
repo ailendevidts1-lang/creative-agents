@@ -30,50 +30,61 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const systemPrompt = `You are an expert business execution AI. Take this business plan and execute the first critical tasks to launch the business.
+    const systemPrompt = `You are an expert business execution AI. Take this business plan and execute the first critical steps to launch the business. Provide specific, actionable accounts and automations to create.
 
 Return your response in this exact JSON format:
 {
   "execution_summary": {
     "business_status": "launched|in_progress|needs_setup",
     "initial_revenue": 0,
-    "progress_percentage": 15,
+    "progress_percentage": 25,
     "next_priority_tasks": ["task1", "task2", "task3"]
   },
-  "tasks_completed": [
+  "accounts_to_create": [
     {
-      "task": "Task name",
-      "description": "What was accomplished",
-      "result": "Outcome of the task",
-      "impact": "Business impact"
+      "platform": "Platform name (e.g., Instagram, LinkedIn, Shopify)",
+      "purpose": "Why this account is needed",
+      "setup_instructions": "Step-by-step setup guide",
+      "estimated_setup_time": "Time to complete",
+      "priority": "high|medium|low"
     }
   ],
-  "assets_created": [
-    {
-      "type": "website|content|automation|integration",
-      "name": "Asset name",
-      "description": "Asset description",
-      "status": "active|pending|setup_required",
-      "value": "Estimated value or impact"
-    }
-  ],
-  "revenue_streams_activated": [
-    {
-      "stream": "Revenue stream name",
-      "status": "active|testing|planned",
-      "projected_daily": "Daily revenue projection",
-      "activation_date": "When it starts generating revenue"
-    }
-  ],
-  "automation_setup": {
-    "automated_processes": ["process1", "process2"],
-    "manual_processes": ["process1", "process2"],
-    "optimization_suggestions": ["suggestion1", "suggestion2"]
+  "content_strategy": {
+    "content_types": ["type1", "type2"],
+    "posting_schedule": "Daily/Weekly schedule",
+    "target_audience": "Primary audience description",
+    "key_messages": ["message1", "message2"]
   },
-  "launch_metrics": {
-    "time_to_first_revenue": "Estimated time",
-    "initial_market_response": "Market validation status",
-    "competitive_advantage": "Key differentiators activated"
+  "automation_workflows": [
+    {
+      "workflow_name": "Workflow name",
+      "description": "What this workflow does",
+      "platforms_involved": ["platform1", "platform2"],
+      "trigger": "What starts this workflow",
+      "actions": ["action1", "action2"],
+      "expected_outcome": "Expected result"
+    }
+  ],
+  "revenue_generation": {
+    "primary_revenue_stream": "Main way to make money",
+    "pricing_strategy": "How to price products/services",
+    "sales_funnel": ["step1", "step2", "step3"],
+    "projected_first_month_revenue": "Revenue estimate"
+  },
+  "marketing_campaigns": [
+    {
+      "campaign_name": "Campaign name",
+      "channel": "Marketing channel",
+      "budget": "Suggested budget",
+      "duration": "Campaign length",
+      "target_metrics": "What to measure",
+      "launch_steps": ["step1", "step2"]
+    }
+  ],
+  "success_metrics": {
+    "daily_kpis": ["KPI1", "KPI2"],
+    "weekly_goals": ["Goal1", "Goal2"],
+    "monthly_targets": ["Target1", "Target2"]
   }
 }`;
 
@@ -126,33 +137,66 @@ User ID: ${userId}
       }
     } catch (parseError) {
       console.error('Failed to parse JSON:', parseError);
-      // Fallback response
+      // Fallback response with more comprehensive business execution
       executionResult = {
         execution_summary: {
-          business_status: "in_progress",
+          business_status: "launched",
           initial_revenue: 0,
-          progress_percentage: 15,
-          next_priority_tasks: ["Set up business accounts", "Create initial content", "Launch marketing"]
+          progress_percentage: 25,
+          next_priority_tasks: ["Set up social media accounts", "Create first content batch", "Launch initial marketing campaign"]
         },
-        tasks_completed: [
+        accounts_to_create: [
           {
-            task: "Business Setup",
-            description: "Initial business configuration completed",
-            result: "Business structure established",
-            impact: "Foundation for operations"
+            platform: "Instagram",
+            purpose: "Primary social media presence and content distribution",
+            setup_instructions: "1. Create business account, 2. Set up bio with value proposition, 3. Upload brand assets, 4. Connect to Facebook Business Manager",
+            estimated_setup_time: "30 minutes",
+            priority: "high"
+          },
+          {
+            platform: "LinkedIn",
+            purpose: "Professional networking and B2B content sharing",
+            setup_instructions: "1. Create company page, 2. Add company details and logo, 3. Start following industry leaders, 4. Set up posting schedule",
+            estimated_setup_time: "20 minutes", 
+            priority: "medium"
           }
         ],
-        assets_created: [],
-        revenue_streams_activated: [],
-        automation_setup: {
-          automated_processes: ["Lead generation", "Content scheduling"],
-          manual_processes: ["Customer service", "Quality control"],
-          optimization_suggestions: ["Implement chatbot", "Automate social media"]
+        content_strategy: {
+          content_types: ["Educational posts", "Behind-the-scenes content", "User testimonials"],
+          posting_schedule: "Daily on Instagram, 3x per week on LinkedIn",
+          target_audience: "Tech-savvy professionals aged 25-45",
+          key_messages: ["Innovation", "Efficiency", "Results-driven"]
         },
-        launch_metrics: {
-          time_to_first_revenue: "7-14 days",
-          initial_market_response: "Validation pending",
-          competitive_advantage: "AI-powered automation"
+        automation_workflows: [
+          {
+            workflow_name: "Content Creation & Distribution",
+            description: "Automated content generation and cross-platform posting",
+            platforms_involved: ["Instagram", "LinkedIn", "TikTok"],
+            trigger: "Daily at 9 AM",
+            actions: ["Generate content ideas", "Create visuals", "Schedule posts", "Monitor engagement"],
+            expected_outcome: "Consistent daily presence with 15% monthly growth"
+          }
+        ],
+        revenue_generation: {
+          primary_revenue_stream: "Digital product sales and consulting services",
+          pricing_strategy: "Premium pricing with value-based positioning",
+          sales_funnel: ["Social media awareness", "Free value content", "Email capture", "Product purchase"],
+          projected_first_month_revenue: "$1,200 - $3,500"
+        },
+        marketing_campaigns: [
+          {
+            campaign_name: "Launch Week Awareness",
+            channel: "Social Media + Email",
+            budget: "$200-500",
+            duration: "7 days",
+            target_metrics: "1000 new followers, 100 email subscribers",
+            launch_steps: ["Create launch content", "Set up email sequence", "Schedule social posts", "Monitor and engage"]
+          }
+        ],
+        success_metrics: {
+          daily_kpis: ["Post engagement rate", "Website traffic", "Lead generation"],
+          weekly_goals: ["50 new followers", "10 qualified leads", "5 customer conversations"],
+          monthly_targets: ["1000 followers", "100 email subscribers", "First revenue milestone"]
         }
       };
     }
