@@ -443,6 +443,39 @@ export type Database = {
         }
         Relationships: []
       }
+      repo_index: {
+        Row: {
+          content_summary: string | null
+          created_at: string
+          file_hash: string
+          file_path: string
+          id: string
+          language: string | null
+          project_id: string
+          symbols: Json | null
+        }
+        Insert: {
+          content_summary?: string | null
+          created_at?: string
+          file_hash: string
+          file_path: string
+          id?: string
+          language?: string | null
+          project_id: string
+          symbols?: Json | null
+        }
+        Update: {
+          content_summary?: string | null
+          created_at?: string
+          file_hash?: string
+          file_path?: string
+          id?: string
+          language?: string | null
+          project_id?: string
+          symbols?: Json | null
+        }
+        Relationships: []
+      }
       search_history: {
         Row: {
           created_at: string
@@ -499,6 +532,127 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      studio_artifacts: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          job_id: string
+          metadata: Json | null
+          path: string
+          type: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          metadata?: Json | null
+          path: string
+          type: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          metadata?: Json | null
+          path?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_artifacts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "studio_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_jobs: {
+        Row: {
+          context_pack: Json | null
+          created_at: string
+          id: string
+          project_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          user_prompt: string
+        }
+        Insert: {
+          context_pack?: Json | null
+          created_at?: string
+          id?: string
+          project_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_prompt: string
+        }
+        Update: {
+          context_pack?: Json | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_prompt?: string
+        }
+        Relationships: []
+      }
+      studio_tasks: {
+        Row: {
+          acceptance_criteria: string | null
+          batch_number: number
+          created_at: string
+          diffs: Json | null
+          id: string
+          job_id: string
+          plan: Json | null
+          status: string
+          target_files: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acceptance_criteria?: string | null
+          batch_number?: number
+          created_at?: string
+          diffs?: Json | null
+          id?: string
+          job_id: string
+          plan?: Json | null
+          status?: string
+          target_files?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acceptance_criteria?: string | null
+          batch_number?: number
+          created_at?: string
+          diffs?: Json | null
+          id?: string
+          job_id?: string
+          plan?: Json | null
+          status?: string
+          target_files?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_tasks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "studio_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscribers: {
         Row: {
