@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Send, Bot, Code, FileText, CheckCircle, Clock, AlertCircle, Zap } from 'lucide-react';
+import { Send, Bot, Code, FileText, CheckCircle, Clock, AlertCircle, Zap, Database } from 'lucide-react';
 import { useStudioAI } from '@/hooks/useStudioAI';
 import { useStudioAgent } from '@/hooks/useStudioAgent';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +39,7 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
     tasks,
     artifacts,
     startStudioAgent,
+    initializeMockData,
     clearCurrentSession
   } = useStudioAgent();
   
@@ -68,6 +69,24 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
       toast({
         title: "Error",
         description: "Failed to generate plan. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleInitializeMockData = async () => {
+    if (!projectId) return;
+    
+    try {
+      await initializeMockData(projectId);
+      toast({
+        title: "Mock Data Initialized",
+        description: "Demo Studio Agent session created for testing.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to initialize mock data.",
         variant: "destructive",
       });
     }
@@ -231,7 +250,16 @@ export function AISidecar({ projectId, currentFiles, onApplyPatches }: AISidecar
                     ) : (
                       <div className="text-center text-muted-foreground py-8">
                         <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Start a Studio Agent session!</p>
+                        <p className="mb-4">Start a Studio Agent session!</p>
+                        <Button
+                          onClick={handleInitializeMockData}
+                          variant="outline"
+                          size="sm"
+                          className="mb-2"
+                        >
+                          <Database className="h-4 w-4 mr-2" />
+                          Load Demo Data
+                        </Button>
                       </div>
                     )}
                   </div>

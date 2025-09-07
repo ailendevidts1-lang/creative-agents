@@ -171,6 +171,39 @@ export function useStudioAgent() {
     }
   }, []);
 
+  const initializeMockData = useCallback(async (projectId: string) => {
+    try {
+      console.log('Initializing mock data for project:', projectId);
+      
+      const { data, error } = await supabase.functions.invoke('studio-mock-data', {
+        body: { projectId }
+      });
+
+      if (error) {
+        console.error('Error initializing mock data:', error);
+        throw new Error(error.message || 'Failed to initialize mock data');
+      }
+
+      console.log('Mock data initialized:', data);
+      
+      // Update state with mock data
+      if (data.job) {
+        setCurrentJob(data.job);
+      }
+      if (data.tasks) {
+        setTasks(data.tasks);
+      }
+      if (data.artifacts) {
+        setArtifacts(data.artifacts);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Failed to initialize mock data:', error);
+      throw error;
+    }
+  }, []);
+
   const clearCurrentSession = useCallback(() => {
     setCurrentJob(null);
     setTasks([]);
@@ -186,6 +219,7 @@ export function useStudioAgent() {
     getJobHistory,
     getTasksForJob,
     getArtifactsForJob,
+    initializeMockData,
     clearCurrentSession
   };
 }

@@ -27,17 +27,23 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get user from JWT
+    // Get user from JWT - handle both cases with and without auth
+    let userId;
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
     
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
-    
-    if (userError || !user) {
-      throw new Error('Invalid user token');
+    if (authHeader) {
+      const jwt = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
+      
+      if (userError || !user) {
+        console.log('Invalid or missing user token, using demo mode');
+        userId = '00000000-0000-0000-0000-000000000000'; // Demo user ID
+      } else {
+        userId = user.id;
+      }
+    } else {
+      console.log('No auth header, using demo mode');
+      userId = '00000000-0000-0000-0000-000000000000'; // Demo user ID
     }
 
     // Create a new job
@@ -45,7 +51,7 @@ serve(async (req) => {
       .from('studio_jobs')
       .insert({
         project_id: projectId,
-        user_id: user.id,
+        user_id: userId,
         user_prompt: userPrompt,
         status: 'planning',
         context_pack: { currentFiles }
