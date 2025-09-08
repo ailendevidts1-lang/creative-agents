@@ -14,6 +14,320 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_approvals: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          details: Json
+          execution_id: string
+          id: string
+          requires_2fa: boolean
+          risk_level: string
+          status: string
+          summary: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          details?: Json
+          execution_id: string
+          id?: string
+          requires_2fa?: boolean
+          risk_level?: string
+          status?: string
+          summary: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          details?: Json
+          execution_id?: string
+          id?: string
+          requires_2fa?: boolean
+          risk_level?: string
+          status?: string
+          summary?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_approvals_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "agent_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_artifacts: {
+        Row: {
+          created_at: string
+          execution_id: string | null
+          id: string
+          kind: string
+          metadata: Json
+          name: string
+          path: string
+          sha: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          execution_id?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          name: string
+          path: string
+          sha?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          execution_id?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          name?: string
+          path?: string
+          sha?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_artifacts_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "agent_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_executions: {
+        Row: {
+          approval_id: string | null
+          artifacts: Json
+          completed_at: string | null
+          created_at: string
+          dry_run: boolean
+          id: string
+          needs_approval: boolean
+          parameters: Json
+          plan_id: string
+          result: Json | null
+          status: string
+          step_id: string
+          tool_name: string
+        }
+        Insert: {
+          approval_id?: string | null
+          artifacts?: Json
+          completed_at?: string | null
+          created_at?: string
+          dry_run?: boolean
+          id?: string
+          needs_approval?: boolean
+          parameters?: Json
+          plan_id: string
+          result?: Json | null
+          status?: string
+          step_id: string
+          tool_name: string
+        }
+        Update: {
+          approval_id?: string | null
+          artifacts?: Json
+          completed_at?: string | null
+          created_at?: string
+          dry_run?: boolean
+          id?: string
+          needs_approval?: boolean
+          parameters?: Json
+          plan_id?: string
+          result?: Json | null
+          status?: string
+          step_id?: string
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_executions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "agent_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_memories: {
+        Row: {
+          created_at: string
+          embedding_text: string | null
+          id: string
+          key: string
+          namespace: string
+          updated_at: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          embedding_text?: string | null
+          id?: string
+          key: string
+          namespace?: string
+          updated_at?: string
+          user_id: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          embedding_text?: string | null
+          id?: string
+          key?: string
+          namespace?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      agent_pipelines: {
+        Row: {
+          config: Json
+          created_at: string
+          dag: Json
+          description: string | null
+          id: string
+          kpis: Json
+          name: string
+          schedule: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          dag?: Json
+          description?: string | null
+          id?: string
+          kpis?: Json
+          name: string
+          schedule?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          dag?: Json
+          description?: string | null
+          id?: string
+          kpis?: Json
+          name?: string
+          schedule?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_plans: {
+        Row: {
+          constraints: Json
+          created_at: string
+          dag_steps: Json
+          goal: string
+          id: string
+          session_id: string
+          status: string
+          success_criteria: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          constraints?: Json
+          created_at?: string
+          dag_steps?: Json
+          goal: string
+          id?: string
+          session_id: string
+          status?: string
+          success_criteria?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          constraints?: Json
+          created_at?: string
+          dag_steps?: Json
+          goal?: string
+          id?: string
+          session_id?: string
+          status?: string
+          success_criteria?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_plans_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "agent_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_sessions: {
+        Row: {
+          context: Json
+          created_at: string
+          current_pipeline_id: string | null
+          id: string
+          mode: string
+          persona: string
+          policy: Json
+          scopes: Json
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          current_pipeline_id?: string | null
+          id?: string
+          mode?: string
+          persona?: string
+          policy?: Json
+          scopes?: Json
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          current_pipeline_id?: string | null
+          id?: string
+          mode?: string
+          persona?: string
+          policy?: Json
+          scopes?: Json
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_projects: {
         Row: {
           architecture: Json
@@ -442,6 +756,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pipeline_runs: {
+        Row: {
+          completed_at: string | null
+          id: string
+          pipeline_id: string
+          result: Json | null
+          started_at: string
+          status: string
+          trigger_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          pipeline_id: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          trigger_type?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          pipeline_id?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          trigger_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_runs_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "agent_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       repo_index: {
         Row: {
